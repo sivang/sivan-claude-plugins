@@ -8,23 +8,31 @@ Session management plugins for Claude Code - save your work at session end and p
 
 ## Included Skills
 
-### Doomsday Protocol (`/doomsday`)
-End-of-session shutdown protocol that:
-- Forces save of all discussed code and changes
-- Updates README.md, PROJECT_STATUS.md, and other docs
-- Creates SESSION_HANDOFF with decisions, gotchas, and next actions
-- Generates git commit message
+### `/doomsday` - The Paranoid Shutdown Protocol
 
-**Trigger:** "end session", "shutdown", "wrap up", "doomsday protocol"
+> *"Treat this as if the server is about to be wiped and rebuild must happen from these files alone."*
 
-### Session Resurrect
-Context reload for returning to projects:
-- Reads README, PROJECT_STATUS, and handoff files
-- Reconstructs project state and active issues
-- Identifies next priority action
-- Provides start command
+Your AI transforms into a **Paranoid Lead Architect** who refuses to let anything exist only in memory. Like a bunker prepper for code:
 
-**Trigger:** "resurrect session", "reload context", "catch me up", "what were we working on"
+- **Force saves everything** - code blocks, text buffers, that brilliant idea you mentioned once
+- **Updates all the docs** - README, PROJECT_STATUS, the works
+- **Creates SESSION_HANDOFF** - decisions, gotchas, "why did we do it this way?!"
+- **Preps git commit** - so you can push and run
+
+**Trigger:** `/doomsday`, "wrap up", "end session", or just dramatically announce "DOOMSDAY PROTOCOL"
+
+### `/resurrect` - Rise From The Ashes
+
+> *"Lead Architect returning to a project with wiped memory. Reconstruct immediately."*
+
+Back after a coffee break? A weekend? A month-long vacation where you forgot everything? No problem:
+
+- **Reads all the breadcrumbs** - README, PROJECT_STATUS, handoff files
+- **Diagnoses the "Active Wound"** - what was half-finished when you left?
+- **Spots the Gotchas** - those weird bugs you'll definitely hit again
+- **Gives you THE command** - the one thing to run first
+
+**Trigger:** `/resurrect`, "catch me up", "what were we working on", or the classic "...where was I?"
 
 ## Installation
 
@@ -40,14 +48,17 @@ Context reload for returning to projects:
 
 ## Usage
 
-**End of session:**
+**When you're done for the day:**
 ```
 /doomsday
 ```
-or just say "wrap up the session" or "doomsday protocol"
+*"Save everything. Trust no one. Not even future me."*
 
-**Start of session:**
-Say "resurrect the session" or "catch me up on where we left off"
+**When you're back:**
+```
+/resurrect
+```
+*"I have returned. Brief me."*
 
 ## Coming Soon
 
