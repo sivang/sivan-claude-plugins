@@ -1,0 +1,23 @@
+{
+  "name": "sivan-plugins",
+  "description": "Sivan's Claude Code plugins for session management",
+  "owner": {
+    "name": "Sivan Grünberg",
+    "email": "sivan@vitakka.co",
+    "url": "https://vitakka.co"
+  },
+  "homepage": "https://github.com/sivan/sivan-claude-plugins",
+  "plugins": [
+    {
+      "name": "session-workflow",
+      "description": "Session management: doomsday shutdown protocol and session resurrection",
+      "version": "1.0.0",
+      "source": "./",
+      "author": {
+        "name": "Sivan Grünberg",
+        "email": "sivan@vitakka.co",
+        "url": "https://vitakka.co"
+      }
+    }
+  ]
+}

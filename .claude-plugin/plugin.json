@@ -1,0 +1,10 @@
+{
+  "name": "session-workflow",
+  "version": "1.0.0",
+  "description": "Session management: doomsday shutdown protocol and session resurrection",
+  "author": {
+    "name": "Sivan Grünberg",
+    "email": "sivan@vitakka.co",
+    "url": "https://vitakka.co"
+  }
+}
