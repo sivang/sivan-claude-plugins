@@ -26,7 +26,7 @@ Context reload for returning to projects:
 
 ```bash
 # Add the marketplace
-/plugin marketplace add sivan/sivan-claude-plugins
+/plugin marketplace add sivang/sivan-claude-plugins
 
 # Install the plugin
 /plugin install session-workflow@sivan-plugins

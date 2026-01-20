@@ -6,7 +6,7 @@
     "email": "sivan@vitakka.co",
     "url": "https://vitakka.co"
   },
-  "homepage": "https://github.com/sivan/sivan-claude-plugins",
+  "homepage": "https://github.com/sivang/sivan-claude-plugins",
   "plugins": [
     {
       "name": "session-workflow",
