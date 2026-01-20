@@ -1,6 +1,10 @@
 # Sivan's Claude Code Plugins
 
-Session management plugins for Claude Code - save your work at session end and pick up where you left off.
+> *"Because your AI pair programmer shouldn't have the memory of a goldfish."*
+
+Session management plugins for Claude Code - save your work at session end and pick up where you left off. No more "where were we?" moments. No more lost context. Just smooth, continuous development across sessions.
+
+**This marketplace is just getting started.** More tools are brewing in the lab - bookmark it, star it, or add it now and watch it grow.
 
 ## Included Skills
 
@@ -45,6 +49,14 @@ or just say "wrap up the session" or "doomsday protocol"
 **Start of session:**
 Say "resurrect the session" or "catch me up on where we left off"
 
+## Coming Soon
+
+Got an idea for a plugin? Open an issue. Got a plugin you built? PRs welcome. This marketplace grows with the community.
+
 ## License
 
 MIT
+
+---
+
+*Built with caffeine and context windows by [Sivan](https://github.com/sivang) at [Vitakka](https://vitakka.co)*
