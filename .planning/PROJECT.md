@@ -16,48 +16,52 @@ Automated, thorough website quality assurance — catch every broken link, typo,
 
 ### Active
 
-- [ ] Slash command `/site-audit` accepts a URL and triggers the audit
-- [ ] Crawls all same-domain links recursively (avoids infinite loops via visited-set)
-- [ ] Verifies external links respond (HTTP check without crawling)
-- [ ] Detects dead/broken links (404s, timeouts, unreachable)
-- [ ] Reads page text and flags spelling/grammar issues using AI analysis
-- [ ] Captures JavaScript console errors on each page
-- [ ] Detects visual issues (broken images, failed resource loads)
-- [ ] Generates a structured markdown report file with all findings
 - [ ] Restructure repository from single-plugin to multi-plugin layout
+- [ ] Slash command `/site-audit` accepts a URL and triggers the audit
+- [ ] Backend crawl layer: recursive same-domain crawling via WebFetch + HTML parsing
+- [ ] Backend content layer: AI-powered spelling/grammar detection on page text
+- [ ] Chrome UI layer: console errors, broken images, visual layout issues
+- [ ] Detects dead/broken links (404s, timeouts, unreachable)
+- [ ] Generates a structured markdown report file with all findings
 
 ### Out of Scope
 
+- External link verification — deferred to v2
 - Full accessibility audit (WCAG compliance) — complex domain, separate tool
 - Performance profiling (load times, Core Web Vitals) — different concern
 - SEO analysis — separate tool territory
-- Crawling external domains fully — only verify they respond
+- Crawling external domains — unbounded scope
 - Screenshots of each page — adds complexity without core value
 
 ## Context
 
 - This lives in the `sivan-claude-plugins` repo which currently holds the `session-workflow` plugin
 - The repo needs restructuring: from single-plugin root to multi-plugin subdirectories
-- The skill relies on Claude-in-Chrome MCP tools (`mcp__claude-in-chrome__*`) for browser interaction
-- External link checking can use `WebFetch` for HTTP verification
+- Two-layer architecture: backend (WebFetch + HTML parsing) handles crawl and content checks; Chrome layer handles visual/runtime checks
+- Backend layer runs first — no browser needed for link crawling and spelling
+- Chrome layer runs second — navigates pages already discovered to check console/visual
 - Spelling detection is AI-powered: Claude reads extracted page text and identifies typos
 - Same-domain crawling needs loop prevention (track visited URLs, normalize paths)
+- State written to disk progressively — not held in context alone
 
 ## Constraints
 
-- **Browser dependency**: Requires Claude-in-Chrome MCP extension to be active
-- **Same-origin navigation**: Chrome MCP tools operate on visible browser tabs
-- **Rate limiting**: Must not overwhelm target sites — sequential page navigation is natural throttling
+- **Chrome dependency**: Chrome MCP only needed for UI layer (visual checks, console errors)
+- **Context budget**: Write findings to disk after each page — don't accumulate in context
+- **Rate limiting**: Sequential navigation provides natural throttling
 - **Plugin structure**: Must follow Claude Code plugin conventions (plugin.json, skills/, commands/)
+- **Page cap**: Hard limit on pages crawled to prevent unbounded execution
 
 ## Key Decisions
 
 | Decision | Rationale | Outcome |
 |----------|-----------|---------|
+| Two-layer architecture (backend + Chrome) | Backend WebFetch crawl is faster and browser-independent; Chrome adds visual layer on top | — Pending |
 | AI-powered spelling over external tool | No spellcheck API available in Claude Code; Claude's language model is well-suited | — Pending |
-| Same-domain crawl + external verify | Full external crawl is unbounded; verifying response is sufficient | — Pending |
+| Same-domain crawl only (v1) | External link verification deferred to v2; keeps scope bounded | — Pending |
 | Markdown report output | Consistent with developer workflow; easy to review/commit | — Pending |
 | Multi-plugin repo structure | User wants both session-workflow and site-audit in one repo | — Pending |
+| Write state to disk, not context | Prevents context overflow on large sites; findings persist if session ends | — Pending |
 
 ---
-*Last updated: 2026-01-22 after initialization*
+*Last updated: 2026-01-22 after requirements definition*
