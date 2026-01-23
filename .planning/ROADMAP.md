@@ -10,8 +10,8 @@ Deliver a Claude Code plugin that crawls a website and produces a comprehensive 
 - Integer phases (1, 2, 3, 4): Planned milestone work
 - Decimal phases (e.g., 2.1): Urgent insertions (marked with INSERTED)
 
-- [ ] **Phase 1: Plugin Scaffold** - Restructure repo and create site-audit plugin entry point
-- [ ] **Phase 2: Backend Crawl + Content** - Recursive crawl via WebFetch with dead link detection and AI spelling analysis
+- [x] **Phase 1: Plugin Scaffold** - Restructure repo and create site-audit plugin entry point
+- [x] **Phase 2: Backend Crawl + Content** - Recursive crawl via WebFetch with dead link detection and AI spelling analysis
 - [ ] **Phase 3: Chrome UI Checks** - Navigate discovered pages in Chrome for console errors, broken images, and visual issues
 - [ ] **Phase 4: Report Generation** - Compile findings into structured, categorized markdown report
 
@@ -28,8 +28,8 @@ Deliver a Claude Code plugin that crawls a website and produces a comprehensive 
 **Plans:** 2 plans
 
 Plans:
-- [ ] 01-01-PLAN.md — Repo restructure and plugin manifest
-- [ ] 01-02-PLAN.md — Slash command and skill skeleton
+- [x] 01-01-PLAN.md — Repo restructure and plugin manifest
+- [x] 01-02-PLAN.md — Slash command and skill skeleton
 
 ### Phase 2: Backend Crawl + Content
 **Goal**: Plugin crawls all same-domain pages via WebFetch, detects dead links, and identifies spelling/grammar issues without needing a browser
@@ -44,8 +44,8 @@ Plans:
 **Plans:** 2 plans
 
 Plans:
-- [ ] 02-01-PLAN.md — Core BFS crawl infrastructure with URL normalization and visited-set tracking
-- [ ] 02-02-PLAN.md — Content analysis integration (dead links + spelling/grammar with filtering)
+- [x] 02-01-PLAN.md — Core BFS crawl infrastructure with URL normalization and visited-set tracking
+- [x] 02-02-PLAN.md — Content analysis integration (dead links + spelling/grammar with filtering)
 
 ### Phase 3: Chrome UI Checks
 **Goal**: Plugin navigates already-discovered pages in Chrome to capture runtime errors, broken resources, and visual layout issues
@@ -82,7 +82,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Plugin Scaffold | 0/2 | Planned | - |
-| 2. Backend Crawl + Content | 0/2 | Planned | - |
+| 1. Plugin Scaffold | 2/2 | Done | 2026-01-23 |
+| 2. Backend Crawl + Content | 2/2 | Done | 2026-01-23 |
 | 3. Chrome UI Checks | 0/2 | Not started | - |
 | 4. Report Generation | 0/2 | Not started | - |
