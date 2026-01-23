@@ -7,28 +7,28 @@
 
 ### Plugin Structure
 
-- [ ] **PLUG-01**: Restructure repo to multi-plugin layout (session-workflow + site-audit subdirectories)
-- [ ] **PLUG-02**: Create site-audit plugin with plugin.json manifest
-- [ ] **PLUG-03**: Create `/site-audit` slash command that accepts a URL argument
+- [x] **PLUG-01**: Restructure repo to multi-plugin layout (session-workflow + site-audit subdirectories)
+- [x] **PLUG-02**: Create site-audit plugin with plugin.json manifest
+- [x] **PLUG-03**: Create `/site-audit` slash command that accepts a URL argument
 
 ### Crawling
 
-- [ ] **CRAWL-01**: Recursive same-domain crawling via WebFetch with HTML link extraction
-- [ ] **CRAWL-02**: URL normalization (trailing slashes, fragments, query params, www prefix, protocol)
-- [ ] **CRAWL-03**: Visited-set tracking to prevent infinite loops
-- [ ] **CRAWL-04**: Configurable page cap to bound crawl size
-- [ ] **CRAWL-05**: Dead link detection (internal pages returning 404/error)
+- [x] **CRAWL-01**: Recursive same-domain crawling via WebFetch with HTML link extraction
+- [x] **CRAWL-02**: URL normalization (trailing slashes, fragments, query params, www prefix, protocol)
+- [x] **CRAWL-03**: Visited-set tracking to prevent infinite loops
+- [x] **CRAWL-04**: Configurable page cap to bound crawl size
+- [x] **CRAWL-05**: Dead link detection (internal pages returning 404/error)
 
 ### Content Analysis
 
-- [ ] **CONT-01**: AI-powered spelling/grammar detection on extracted page text
-- [ ] **CONT-02**: Filter code blocks, technical terms, and brand names from spell-check analysis
+- [x] **CONT-01**: AI-powered spelling/grammar detection on extracted page text
+- [x] **CONT-02**: Filter code blocks, technical terms, and brand names from spell-check analysis
 
 ### Visual/UI Checks (Chrome)
 
-- [ ] **UI-01**: Navigate crawled pages in Chrome and capture console errors
-- [ ] **UI-02**: Detect broken images and failed resource loads
-- [ ] **UI-03**: Detect visual layout issues (overlapping elements, collapsed layouts)
+- [x] **UI-01**: Navigate crawled pages in Chrome and capture console errors
+- [x] **UI-02**: Detect broken images and failed resource loads
+- [x] **UI-03**: Detect visual layout issues (overlapping elements, collapsed layouts)
 
 ### Report
 
@@ -65,19 +65,19 @@
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| PLUG-01 | Phase 1 | Pending |
-| PLUG-02 | Phase 1 | Pending |
-| PLUG-03 | Phase 1 | Pending |
-| CRAWL-01 | Phase 2 | Pending |
-| CRAWL-02 | Phase 2 | Pending |
-| CRAWL-03 | Phase 2 | Pending |
-| CRAWL-04 | Phase 2 | Pending |
-| CRAWL-05 | Phase 2 | Pending |
-| CONT-01 | Phase 2 | Pending |
-| CONT-02 | Phase 2 | Pending |
-| UI-01 | Phase 3 | Pending |
-| UI-02 | Phase 3 | Pending |
-| UI-03 | Phase 3 | Pending |
+| PLUG-01 | Phase 1 | Complete |
+| PLUG-02 | Phase 1 | Complete |
+| PLUG-03 | Phase 1 | Complete |
+| CRAWL-01 | Phase 2 | Complete |
+| CRAWL-02 | Phase 2 | Complete |
+| CRAWL-03 | Phase 2 | Complete |
+| CRAWL-04 | Phase 2 | Complete |
+| CRAWL-05 | Phase 2 | Complete |
+| CONT-01 | Phase 2 | Complete |
+| CONT-02 | Phase 2 | Complete |
+| UI-01 | Phase 3 | Complete |
+| UI-02 | Phase 3 | Complete |
+| UI-03 | Phase 3 | Complete |
 | RPT-01 | Phase 4 | Pending |
 | RPT-02 | Phase 4 | Pending |
 | RPT-03 | Phase 4 | Pending |

@@ -12,7 +12,7 @@ Deliver a Claude Code plugin that crawls a website and produces a comprehensive 
 
 - [x] **Phase 1: Plugin Scaffold** - Restructure repo and create site-audit plugin entry point
 - [x] **Phase 2: Backend Crawl + Content** - Recursive crawl via WebFetch with dead link detection and AI spelling analysis
-- [ ] **Phase 3: Chrome UI Checks** - Navigate discovered pages in Chrome for console errors, broken images, and visual issues
+- [x] **Phase 3: Chrome UI Checks** - Navigate discovered pages in Chrome for console errors, broken images, and visual issues
 - [ ] **Phase 4: Report Generation** - Compile findings into structured, categorized markdown report
 
 ## Phase Details
@@ -58,8 +58,8 @@ Plans:
 **Plans:** 2 plans
 
 Plans:
-- [ ] 03-01-PLAN.md — UI_CHECKS.md reference + console errors and broken resource detection
-- [ ] 03-02-PLAN.md — Visual layout issue detection (overflow, collapsed containers)
+- [x] 03-01-PLAN.md — UI_CHECKS.md reference + console errors and broken resource detection
+- [x] 03-02-PLAN.md — Visual layout issue detection (overflow, collapsed containers)
 
 ### Phase 4: Report Generation
 **Goal**: All findings from crawl, content, and UI phases compile into a single structured markdown report
@@ -84,5 +84,5 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4
 |-------|----------------|--------|-----------|
 | 1. Plugin Scaffold | 2/2 | Done | 2026-01-23 |
 | 2. Backend Crawl + Content | 2/2 | Done | 2026-01-23 |
-| 3. Chrome UI Checks | 0/2 | Planned | - |
+| 3. Chrome UI Checks | 2/2 | Done | 2026-01-23 |
 | 4. Report Generation | 0/2 | Not started | - |
