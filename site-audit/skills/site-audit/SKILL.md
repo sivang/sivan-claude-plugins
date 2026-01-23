@@ -36,12 +36,22 @@ After URL validation, begin the breadth-first crawl process.
    - `max_pages`: 50 (crawl limit)
    - `external_links`: Empty list for recording off-domain links
    - `seed_hostname`: Extracted hostname from seed URL (for same-domain checks)
-3. Create `.audit-data/` directory in current working directory for storing findings
+   - `link_sources`: Map of {target_url: source_page} for dead link tracking
+   - `broken_links_count`: 0
+   - `spelling_issues_count`: 0
+3. Create `.audit-data/` directory and initialize JSONL files:
+   ```bash
+   mkdir -p .audit-data
+   touch .audit-data/findings-broken-links.jsonl
+   touch .audit-data/findings-spelling.jsonl
+   ```
 4. Reference @references/URL_RULES.md for URL normalization rules
-5. Display initialization summary to user:
+5. Reference @references/CHECKS.md for content analysis rules
+6. Display initialization summary to user:
    - Seed URL (normalized)
    - Domain to crawl
    - Max pages limit
+   - Findings will be written to `.audit-data/` directory
    - Ask user to confirm before starting crawl
 
 **Crawl Loop:**
@@ -58,15 +68,33 @@ Execute the following steps in order, looping until termination:
 
 5. **Fetch page** — Use WebFetch with this exact prompt:
    ```
-   Extract all links from this page. Return ONLY a markdown list in [text](url) format.
-   Include every <a href="...">, <link href="...">, and <area href="..."> element.
-   Example output:
+   Extract from this page:
+   1) All links in [text](url) format, one per line. Include every <a href="...">, <link href="...">, and <area href="..."> element.
+   2) Main text content of the page (skip code blocks, navigation, footer).
+
+   Format your response as:
+   LINKS:
    [Homepage](/)
    [About](/about)
-   [Contact](https://example.com/contact)
+
+   CONTENT:
+   [page text content here]
    ```
 
-6. **Parse links** — Extract URLs from WebFetch response using pattern `[text](url)`. Parse each line looking for markdown link format.
+   **If WebFetch returns an error (404, timeout, connection refused, etc.):**
+   - This is a broken link — the current URL is dead
+   - Get source page from `link_sources` map (use current URL as key)
+   - If source not found, use "(seed)" as source
+   - Record finding:
+     ```bash
+     echo '{"type":"broken_link","page":"[source_page]","target":"[current_url]","error":"[error_type]","timestamp":"[iso8601_timestamp]"}' >> .audit-data/findings-broken-links.jsonl
+     ```
+   - Increment `broken_links_count`
+   - Skip to step 11 (loop back) — no links to extract from failed page
+
+6. **Parse response** — Split WebFetch response into two sections:
+   - Extract links from "LINKS:" section using pattern `[text](url)`
+   - Extract page text content from "CONTENT:" section for analysis
 
 7. **Normalize URLs** — For each extracted URL:
    - Resolve relative URLs to absolute using current page URL as base
@@ -76,41 +104,73 @@ Execute the following steps in order, looping until termination:
 8. **Classify and route** — For each normalized URL:
    - **Skip check:** If URL matches any skip rule (mailto:, .pdf, .jpg, etc. per URL_RULES.md), discard it
    - **Same-domain check:** Extract hostname, compare with seed_hostname using strict matching (www. is significant)
-   - **If same-domain:** Add to queue (if not already in visited set)
+   - **If same-domain:** Add to queue (if not already in visited set), record in `link_sources` map: `link_sources[normalized_url] = current_page_url`
    - **If external:** Add to external_links list with source page reference
    - **If skip:** Discard (don't crawl, don't record)
 
-9. **State update** — After processing each page, output:
+9. **Analyze content** — Reference @references/CHECKS.md for detailed rules. Analyze the page text content extracted in step 6:
+
+   **Spelling/Grammar Check:**
+   - Apply filtering rules to exclude non-prose content:
+     - Code blocks (indented text, ```fenced```, `inline`)
+     - Technical identifiers (camelCase, SCREAMING_CASE, snake_case)
+     - URLs, email addresses, domain names
+     - Brand/product names (Capitalized words, acronyms)
+   - Identify HIGH confidence spelling errors only:
+     - Obvious typos: "occured" → "occurred", "recieve" → "receive"
+     - Repeated words: "the the" → "the"
+     - Common misspellings: "seperate" → "separate"
+   - For each error found:
+     - Extract context snippet (~50 chars before/after)
+     - Determine suggested correction
+     - Get current timestamp in ISO 8601 format
+     - Write finding to JSONL:
+       ```bash
+       echo '{"type":"spelling","page":"[current_url]","word":"[misspelled]","suggestion":"[correction]","context":"[snippet]","timestamp":"[iso8601]"}' >> .audit-data/findings-spelling.jsonl
+       ```
+     - Increment `spelling_issues_count`
+
+   **Note:** Dead link detection for this page already happened in step 5 (if WebFetch failed). This step only analyzes successfully fetched content.
+
+10. **State update** — After processing each page, output:
    ```
-   Page [page_count]/[max_pages]: [current_url]
+   Page [page_count]/[max_pages]: [current_url] - [issues_found_this_page] issues (broken links: [B], spelling: [S])
    Queue: [queue_length] URLs remaining
    ```
 
-10. **Detailed state** — Every 5 pages (when page_count % 5 == 0), also output:
+11. **Detailed state** — Every 5 pages (when page_count % 5 == 0), also output:
     ```
     Visited: [visited_count] pages
     External links found: [external_links_count]
+    Total findings: [broken_links_count] broken links, [spelling_issues_count] spelling issues
     Next in queue: [first 3 URLs from queue, or "empty"]
     ```
 
-11. **Loop back** — Return to step 1 (termination check)
+12. **Loop back** — Return to step 1 (termination check)
 
 **After crawl completion:**
 
 - Report total pages crawled
 - Report queue status (exhausted or hit page limit)
 - Report external links count
+- Report total findings: broken links and spelling issues
+- Report findings files: `.audit-data/findings-broken-links.jsonl` and `.audit-data/findings-spelling.jsonl`
 - Proceed to Phase 3
 
 **Notes:**
 - Normalize URLs BEFORE adding to queue or visited set (prevents duplicates like `/page` and `/page/`)
-- WebFetch handles fetch errors gracefully — if page fails to load, log error and continue
-- Store external_links for future dead link verification (not implemented yet in Phase 2)
+- Dead link detection happens in TWO places:
+  - **Immediate:** When WebFetch fails to fetch a dequeued URL (step 5)
+  - **Deferred:** When a link found on page A points to URL B, and URL B fails when later dequeued
+- Source page tracking via `link_sources` map enables accurate broken link reporting
+- Content analysis (step 9) only runs for successfully fetched pages (WebFetch returned content)
+- Findings are written progressively to disk (JSONL append) to avoid memory overflow on large sites
+- Store external_links for future external link verification (not implemented yet in Phase 2)
 - HTTPS preference rule (rule 7): If you encounter both http:// and https:// versions, only queue the https:// version
 
-**Phase 3: Content Analysis** (to be implemented)
-- Placeholder: Report that content analysis is not yet implemented
-- Target: Dead link detection and AI-powered spelling check
+**Phase 3: External Link Verification** (to be implemented)
+- Placeholder: Report that external link verification is not yet implemented
+- Target: Verify external links collected during crawl (different domains)
 
 **Phase 4: UI Checks** (to be implemented)
 - Placeholder: Report that UI checks are not yet implemented
@@ -124,9 +184,11 @@ Execute the following steps in order, looping until termination:
 
 Phases 1-2 are implemented. After validating the URL, the skill will:
 1. Confirm the target domain
-2. Initialize crawl state with BFS queue
+2. Initialize crawl state with BFS queue and JSONL findings files
 3. Crawl up to 50 same-domain pages using WebFetch
-4. Track external links for future verification
-5. Report crawl completion
+4. For each page: detect broken links, analyze spelling/grammar, extract links
+5. Write findings progressively to `.audit-data/` JSONL files
+6. Track external links for future verification
+7. Report crawl completion with findings summary
 
-Content analysis (Phase 3), UI checks (Phase 4), and final report (Phase 5) are coming in future updates.
+External link verification (Phase 3), UI checks (Phase 4), and final report (Phase 5) are coming in future updates.
