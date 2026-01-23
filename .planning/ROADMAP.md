@@ -55,11 +55,11 @@ Plans:
   1. Plugin opens each crawled page in Chrome and captures JavaScript console errors
   2. Broken images and failed resource loads are detected via network request inspection
   3. Visual layout issues (overlapping elements, collapsed layouts) are identified
-**Plans**: TBD (1-2 plans)
+**Plans:** 2 plans
 
 Plans:
-- [ ] 03-01: Console errors and broken resource detection
-- [ ] 03-02: Visual layout issue detection
+- [ ] 03-01-PLAN.md — UI_CHECKS.md reference + console errors and broken resource detection
+- [ ] 03-02-PLAN.md — Visual layout issue detection (overflow, collapsed containers)
 
 ### Phase 4: Report Generation
 **Goal**: All findings from crawl, content, and UI phases compile into a single structured markdown report
@@ -84,5 +84,5 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4
 |-------|----------------|--------|-----------|
 | 1. Plugin Scaffold | 2/2 | Done | 2026-01-23 |
 | 2. Backend Crawl + Content | 2/2 | Done | 2026-01-23 |
-| 3. Chrome UI Checks | 0/2 | Not started | - |
+| 3. Chrome UI Checks | 0/2 | Planned | - |
 | 4. Report Generation | 0/2 | Not started | - |
