@@ -41,12 +41,11 @@ Plans:
   3. Crawl stops at a configurable page cap (default 50) and terminates gracefully
   4. Dead internal links (404s, errors) are detected and recorded to disk
   5. Spelling/grammar issues are identified on page text with code blocks and technical terms filtered out
-**Plans**: TBD (2-3 plans)
+**Plans:** 2 plans
 
 Plans:
-- [ ] 02-01: Crawl loop with URL normalization and visited-set
-- [ ] 02-02: Dead link detection and page cap
-- [ ] 02-03: AI-powered spelling/grammar analysis
+- [ ] 02-01-PLAN.md — Core BFS crawl infrastructure with URL normalization and visited-set tracking
+- [ ] 02-02-PLAN.md — Content analysis integration (dead links + spelling/grammar with filtering)
 
 ### Phase 3: Chrome UI Checks
 **Goal**: Plugin navigates already-discovered pages in Chrome to capture runtime errors, broken resources, and visual layout issues
@@ -84,6 +83,6 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Plugin Scaffold | 0/2 | Planned | - |
-| 2. Backend Crawl + Content | 0/3 | Not started | - |
+| 2. Backend Crawl + Content | 0/2 | Planned | - |
 | 3. Chrome UI Checks | 0/2 | Not started | - |
 | 4. Report Generation | 0/2 | Not started | - |
