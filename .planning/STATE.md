@@ -5,23 +5,23 @@
 See: .planning/PROJECT.md (updated 2026-01-22)
 
 **Core value:** Automated, thorough website quality assurance — catch every broken link, typo, and error across an entire site in one command.
-**Current focus:** Phase 4 in progress - Report Generation. Plan 01 complete, Plan 02 pending.
+**Current focus:** All phases complete. Site audit skill fully implemented.
 
 ## Current Position
 
 Phase: 4 of 4 (Report Generation)
-Plan: 1 of 2 in Phase 4
-Status: In progress - 04-01 complete, 04-02 pending
-Last activity: 2026-01-23 — Completed 04-01-PLAN.md (Report Format and Generation)
+Plan: 2 of 2 in Phase 4
+Status: Complete - all phases and plans executed
+Last activity: 2026-01-23 — Completed 04-02-PLAN.md (Report Severity, Metadata, TOC, Truncation)
 
-Progress: [████████░.] 87% (7/8 plans executed: 02-01, 02-02, 03-01, 03-02, 04-01 done; 04-02 pending)
+Progress: [██████████] 100% (8/8 plans executed: 02-01, 02-02, 03-01, 03-02, 04-01, 04-02 done)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 5
-- Average duration: 2m 35s
-- Total execution time: 0.22 hours
+- Total plans completed: 6
+- Average duration: 2m 30s
+- Total execution time: 0.25 hours
 
 **By Phase:**
 
@@ -29,11 +29,11 @@ Progress: [████████░.] 87% (7/8 plans executed: 02-01, 02-02, 
 |-------|-------|-------|----------|
 | 2 | 2 | 5m 45s | 2m 52s |
 | 3 | 2 | 5m 09s | 2m 34s |
-| 4 | 1 | 1m 54s | 1m 54s |
+| 4 | 2 | 3m 58s | 1m 59s |
 
 **Recent Trend:**
-- Last 5 plans: 02-02 (3m 38s), 03-01 (2m 35s), 03-02 (2m 34s), 04-01 (1m 54s)
-- Trend: Consistent ~2-3 min per plan, documentation-focused plans faster
+- Last 5 plans: 03-01 (2m 35s), 03-02 (2m 34s), 04-01 (1m 54s), 04-02 (2m 04s)
+- Trend: Consistent ~2 min per plan, documentation-focused plans faster
 
 *Updated after each plan completion*
 
@@ -67,6 +67,10 @@ Recent decisions affecting current work:
 - Path-only URLs in report tables for same-domain (reduces noise) (04-01)
 - Page index at end sorted by total findings descending (04-01)
 - Severity mapping: broken links/console/resources=error, spelling/visual=warning (04-01)
+- Fixed severity per finding type, not per individual finding (04-02)
+- TOC threshold at 50 findings (short reports don't need navigation) (04-02)
+- Per-section truncation at 100 rows with JSONL pointer (04-02)
+- Page cap shown in metadata for capacity awareness (04-02)
 
 ### Pending Todos
 
@@ -79,5 +83,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-01-23
-Stopped at: Completed 04-01-PLAN.md (Report Format and Generation)
+Stopped at: Completed 04-02-PLAN.md (Report Severity, Metadata, TOC, Truncation) - ALL PLANS COMPLETE
 Resume file: None
