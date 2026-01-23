@@ -1,17 +1,16 @@
 # Project Status
 
-**Current Phase:** Stable — v1.0 shipped
+**Current Phase:** Stable — v1.0.0 released on GitHub
 **Date:** 2026-01-23
 
 ## Completed (This Session)
 
-- Executed Phase 4 (Report Generation) — 2 plans, both passed verification
-- Audited v1 milestone — 16/16 requirements, 4/4 phases, 11/11 integrations
-- Completed milestone — archived roadmap/requirements, tagged v1.0
-- Rewrote README.md for multi-plugin repo coverage
-- Bumped site-audit version to 1.0.0
-- Verified session-workflow plugin integrity (no regression from repo restructure)
-- Pushed all commits + v1.0 tag to origin/main
+- Verified local/remote sync (clean, up to date)
+- Validated marketplace structure (`.claude-plugin/marketplace.json` + per-plugin manifests)
+- Updated GitHub repo description to cover both plugins
+- Added repository topics: `claude-code`, `claude-code-plugin`, `claude-plugins`, `developer-tools`
+- Set homepage URL to README anchor
+- Created GitHub release v1.0.0 with full release notes
 
 ## In Progress
 
