@@ -25,11 +25,11 @@ Deliver a Claude Code plugin that crawls a website and produces a comprehensive 
   1. Repository contains separate subdirectories for session-workflow and site-audit plugins
   2. site-audit plugin has a valid plugin.json manifest recognized by Claude Code
   3. User can type `/site-audit <url>` and the command dispatches to the audit skill
-**Plans**: TBD (1-2 plans)
+**Plans:** 2 plans
 
 Plans:
-- [ ] 01-01: Repo restructure and plugin manifest
-- [ ] 01-02: Slash command and skill skeleton
+- [ ] 01-01-PLAN.md — Repo restructure and plugin manifest
+- [ ] 01-02-PLAN.md — Slash command and skill skeleton
 
 ### Phase 2: Backend Crawl + Content
 **Goal**: Plugin crawls all same-domain pages via WebFetch, detects dead links, and identifies spelling/grammar issues without needing a browser
@@ -83,7 +83,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Plugin Scaffold | 0/2 | Not started | - |
+| 1. Plugin Scaffold | 0/2 | Planned | - |
 | 2. Backend Crawl + Content | 0/3 | Not started | - |
 | 3. Chrome UI Checks | 0/2 | Not started | - |
 | 4. Report Generation | 0/2 | Not started | - |
