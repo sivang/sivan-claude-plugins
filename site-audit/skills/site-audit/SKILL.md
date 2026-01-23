@@ -320,22 +320,84 @@ Execute the following steps in order for each URL in visited pages:
 - Visual layout checks run after console/network checks on the same already-loaded page (no additional navigation or wait needed)
 - Reference @references/UI_CHECKS.md for all filtering, classification, and visual check details
 
-**Phase 5: Report** (to be implemented)
-- Placeholder: Report that report generation is not yet implemented
-- Target: Structured markdown report with findings by page and by type
+**Phase 5: Report**
+
+After UI checks complete, generate the structured markdown report.
+
+**Report Generation:**
+
+1. **Reference rules** -- Reference @references/REPORT.md for format specification
+
+2. **Generate filename** -- Derive report filename:
+   - Extract hostname from seed URL
+   - Replace dots with hyphens (e.g., `example.com` -> `example-com`)
+   - Get current date in YYYY-MM-DD format
+   - Result: `audit-{domain}-{date}.md` (e.g., `audit-example-com-2026-01-23.md`)
+
+3. **Read all JSONL findings** -- Read each findings file:
+   ```bash
+   cat .audit-data/findings-broken-links.jsonl 2>/dev/null
+   cat .audit-data/findings-spelling.jsonl 2>/dev/null
+   cat .audit-data/findings-console-errors.jsonl 2>/dev/null
+   cat .audit-data/findings-broken-resources.jsonl 2>/dev/null
+   cat .audit-data/findings-visual-issues.jsonl 2>/dev/null
+   ```
+   - Parse each line as JSON
+   - Group findings by type
+   - Count totals per type and per severity
+   - If a file is empty or missing, that type has zero findings
+
+4. **Build run metadata** -- Create the report header:
+   - H1 title: `# Site Audit: {hostname}`
+   - Seed URL, date, pages crawled (from Phase 2 visited count), total findings
+
+5. **Build summary counts** -- For each finding type, count findings by severity:
+   - Broken links: all are "error"
+   - Console errors: all are "error"
+   - Broken resources: all are "error"
+   - Spelling issues: all are "warning"
+   - Visual issues: all are "warning"
+   - Build the summary table (see @references/REPORT.md for format)
+   - Only include rows for types that have findings
+   - Calculate grand totals for the bold Total row
+
+6. **Build finding type sections** -- For each type that has findings, in order (Broken Links, Spelling Issues, Console Errors, Broken Resources, Visual Issues):
+   - Create H2 section header
+   - Build markdown table with type-specific columns (see @references/REPORT.md)
+   - One row per finding
+   - Strip protocol and domain from same-domain URLs (show path only)
+   - Truncate long messages to 100 chars
+   - Context column for spelling: ~50 chars around the word, quoted
+
+7. **Build page index** -- Aggregate findings by page URL:
+   - For each unique page URL across all findings
+   - Count findings per type for that page
+   - Sort by total findings descending (ties broken alphabetically by path)
+   - Build the page index table (see @references/REPORT.md)
+   - Only include pages that have at least one finding
+
+8. **Write report file** -- Assemble and write the complete report:
+   - Concatenate: metadata header + summary table + finding sections + page index
+   - If 50+ total findings, insert a table of contents after the summary
+   - Use the Write tool to write the markdown file to working directory root
+   - File path: `./audit-{domain}-{date}.md`
+
+**After report generation:**
+- Report file path to user
+- Report total findings count and breakdown by type
+- Note that raw JSONL data is preserved in `.audit-data/` for further analysis
+- Audit is complete
 
 ## Current Status
 
-Phases 1-2 and Phase 4 are implemented. After validating the URL, the skill will:
+All phases are implemented. After validating the URL, the skill will:
 1. Confirm the target domain
 2. Initialize crawl state with BFS queue and JSONL findings files
 3. Crawl up to 50 same-domain pages using WebFetch
 4. For each page: detect broken links, analyze spelling/grammar, extract links
 5. Write findings progressively to `.audit-data/` JSONL files
-6. Track external links for future verification
-7. Report crawl completion with findings summary
-8. Open each visited page in Chrome to check for console errors, broken resources, and visual layout issues
-9. For each page: Navigate, Wait, Console check, Network check, Visual layout check, Report
-10. Write UI check findings to dedicated JSONL files (console-errors, broken-resources, visual-issues)
+6. Open each visited page in Chrome for console errors, broken resources, and visual issues
+7. Generate structured markdown report with findings grouped by type and page index
+8. Write report to `audit-{domain}-{date}.md` in working directory
 
-External link verification (Phase 3) and final report (Phase 5) are coming in future updates.
+External link verification (Phase 3) is coming in future updates.
