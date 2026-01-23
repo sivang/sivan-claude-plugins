@@ -10,28 +10,28 @@ See: .planning/PROJECT.md (updated 2026-01-22)
 ## Current Position
 
 Phase: 2 of 4 (Backend Crawl + Content)
-Plan: 1 of 2 in current phase
-Status: In progress
-Last activity: 2026-01-23 — Completed 02-01-PLAN.md (URL Normalization & BFS Crawl Loop)
+Plan: 2 of 2 in current phase
+Status: Phase complete
+Last activity: 2026-01-23 — Completed 02-02-PLAN.md (Content Analysis Integration)
 
-Progress: [██........] 25% (1/4 plans complete)
+Progress: [████......] 50% (2/4 plans complete)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 1
-- Average duration: 2m 7s
-- Total execution time: 0.04 hours
+- Total plans completed: 2
+- Average duration: 2m 52s
+- Total execution time: 0.10 hours
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
-| 2 | 1 | 2m 7s | 2m 7s |
+| 2 | 2 | 5m 45s | 2m 52s |
 
 **Recent Trend:**
-- Last 5 plans: 02-01 (2m 7s)
-- Trend: First plan completed
+- Last 5 plans: 02-01 (2m 7s), 02-02 (3m 38s)
+- Trend: Steady execution, Phase 2 complete
 
 *Updated after each plan completion*
 
@@ -49,6 +49,10 @@ Recent decisions affecting current work:
 - Strict hostname matching: www.example.com ≠ example.com (02-01)
 - WebFetch with [text](url) markdown format for link extraction (02-01)
 - 50 page crawl limit with FIFO queue (02-01)
+- Progressive JSONL writing prevents memory overflow on large sites (02-02)
+- Two-phase dead link detection: immediate on fetch error, deferred when queued URL fails (02-02)
+- HIGH confidence spelling errors only to avoid technical term false positives (02-02)
+- Single WebFetch call returns both links and content for efficiency (02-02)
 
 ### Pending Todos
 
@@ -61,5 +65,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-01-23
-Stopped at: Completed 02-01-PLAN.md (URL Normalization & BFS Crawl Loop)
+Stopped at: Completed 02-02-PLAN.md (Content Analysis Integration) — Phase 2 complete
 Resume file: None
