@@ -172,9 +172,103 @@ Execute the following steps in order, looping until termination:
 - Placeholder: Report that external link verification is not yet implemented
 - Target: Verify external links collected during crawl (different domains)
 
-**Phase 4: UI Checks** (to be implemented)
-- Placeholder: Report that UI checks are not yet implemented
-- Target: Chrome-based console error and visual issue detection
+**Phase 4: UI Checks**
+
+After crawl completion, perform Chrome-based runtime checks on all visited pages to detect console errors and broken resources that backend-only crawling cannot find.
+
+**Initialization:**
+
+1. Reference @references/UI_CHECKS.md for console filtering and resource classification rules
+2. Get the visited pages list from Phase 2 crawl context (the `visited` set)
+3. Create a Chrome tab for UI checks:
+   - Call `tabs_context_mcp` to get existing tab group
+   - Call `tabs_create_mcp` to create one dedicated tab for all UI checks
+   - Store the returned tab ID for all subsequent navigations
+4. Initialize JSONL findings files:
+   ```bash
+   touch .audit-data/findings-console-errors.jsonl
+   touch .audit-data/findings-broken-resources.jsonl
+   ```
+5. Initialize counters:
+   - `page_check_count`: 0
+   - `console_errors_count`: 0
+   - `broken_resources_count`: 0
+   - `total_pages`: length of visited set
+6. Display initialization summary to user:
+   - Pages to check: [total_pages] (from Phase 2 crawl)
+   - Chrome tab created: [tab_id]
+   - Findings files: `.audit-data/findings-console-errors.jsonl`, `.audit-data/findings-broken-resources.jsonl`
+   - Ask user to confirm before starting UI checks
+
+**UI Check Loop:**
+
+Execute the following steps in order for each URL in visited pages:
+
+1. **Progress check** -- If page_check_count >= total_pages, exit loop and proceed to completion
+
+2. **Navigate** -- Navigate the Chrome tab to the current URL using the navigate tool with the stored tab ID
+
+3. **Wait** -- Wait 3 seconds for page load (scripts, resources, async content)
+
+4. **Console error check** -- Reference @references/UI_CHECKS.md for filtering rules:
+   - Call `read_console_messages` with `{"tabId": tab_id, "onlyErrors": true, "clear": true}`
+   - Filter out messages from `chrome-extension://` URLs
+   - Filter out favicon 404 messages
+   - For each remaining error message:
+     - Extract level (error/warning) and message text (truncate to 500 chars)
+     - Get current timestamp in ISO 8601 format
+     - Write finding to JSONL:
+       ```bash
+       echo '{"type":"console_error","page":"[url]","level":"[level]","message":"[msg]","timestamp":"[iso8601]"}' >> .audit-data/findings-console-errors.jsonl
+       ```
+     - Increment `console_errors_count`
+
+5. **Broken resource check** -- Reference @references/UI_CHECKS.md for classification rules:
+   - Call `read_network_requests` with `{"tabId": tab_id, "clear": true}`
+   - Filter for failed requests: status >= 400 or status == 0
+   - Filter out `chrome-extension://` requests
+   - For each broken resource:
+     - Classify resource type by URL extension:
+       - `.jpg`, `.jpeg`, `.png`, `.gif`, `.svg`, `.webp`, `.ico` -> `image`
+       - `.css` -> `style`
+       - `.js` -> `script`
+       - `.woff`, `.woff2`, `.ttf`, `.eot` -> `font`
+       - Other -> `other`
+     - Extract resource_url, resource_type, status
+     - Get current timestamp in ISO 8601 format
+     - Write finding to JSONL:
+       ```bash
+       echo '{"type":"broken_resource","page":"[url]","resource_url":"[failed_url]","resource_type":"[type]","status":"[status]","timestamp":"[iso8601]"}' >> .audit-data/findings-broken-resources.jsonl
+       ```
+     - Increment `broken_resources_count`
+
+6. **State update** -- After processing each page, increment page_check_count and output:
+   ```
+   UI Check [page_check_count]/[total_pages]: [url] - [X] issues (console: [C], resources: [R])
+   ```
+
+7. **Detailed state** -- Every 5 pages (when page_check_count % 5 == 0), also output:
+   ```
+   Total findings: [console_errors_count] console errors, [broken_resources_count] broken resources
+   Remaining: [remaining_count] pages
+   ```
+
+8. **Loop back** -- Return to step 1 (progress check)
+
+**After UI check completion:**
+
+- Report total pages checked: [page_check_count]
+- Report total findings: [console_errors_count] console errors, [broken_resources_count] broken resources
+- Report findings files: `.audit-data/findings-console-errors.jsonl`, `.audit-data/findings-broken-resources.jsonl`
+- Proceed to Phase 5
+
+**Notes:**
+- Single tab reuse pattern: create once, navigate for each page (do not create new tabs)
+- Clear console and network state between pages using `clear: true` parameter
+- Handle navigation errors: if page fails to load, log as console_error finding with message "Navigation timeout" and continue
+- Progressive JSONL writing: same append pattern as Phase 2
+- Wait strategy: 3 seconds per page (max 5s if page is slow to load)
+- Reference @references/UI_CHECKS.md for all filtering and classification details
 
 **Phase 5: Report** (to be implemented)
 - Placeholder: Report that report generation is not yet implemented
@@ -182,7 +276,7 @@ Execute the following steps in order, looping until termination:
 
 ## Current Status
 
-Phases 1-2 are implemented. After validating the URL, the skill will:
+Phases 1-2 and Phase 4 are implemented. After validating the URL, the skill will:
 1. Confirm the target domain
 2. Initialize crawl state with BFS queue and JSONL findings files
 3. Crawl up to 50 same-domain pages using WebFetch
@@ -190,5 +284,7 @@ Phases 1-2 are implemented. After validating the URL, the skill will:
 5. Write findings progressively to `.audit-data/` JSONL files
 6. Track external links for future verification
 7. Report crawl completion with findings summary
+8. Open each visited page in Chrome to check for console errors and broken resources
+9. Write UI check findings to dedicated JSONL files
 
-External link verification (Phase 3), UI checks (Phase 4), and final report (Phase 5) are coming in future updates.
+External link verification (Phase 3) and final report (Phase 5) are coming in future updates.
