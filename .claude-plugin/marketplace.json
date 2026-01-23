@@ -1,6 +1,6 @@
 {
   "name": "sivan-plugins",
-  "description": "Sivan's Claude Code plugins for session management",
+  "description": "Sivan's Claude Code plugins for session management and website auditing",
   "owner": {
     "name": "Sivan Grünberg",
     "email": "sivan@vitakka.co",
@@ -12,7 +12,18 @@
       "name": "session-workflow",
       "description": "Session management: doomsday shutdown protocol and session resurrection",
       "version": "1.0.0",
-      "source": "./",
+      "source": "./session-workflow",
+      "author": {
+        "name": "Sivan Grünberg",
+        "email": "sivan@vitakka.co",
+        "url": "https://vitakka.co"
+      }
+    },
+    {
+      "name": "site-audit",
+      "description": "Crawl a website and produce a comprehensive quality audit covering broken links, spelling errors, console errors, and visual issues",
+      "version": "0.1.0",
+      "source": "./site-audit",
       "author": {
         "name": "Sivan Grünberg",
         "email": "sivan@vitakka.co",
