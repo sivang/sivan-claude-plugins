@@ -135,11 +135,80 @@ Lists each page that had at least one finding, sorted by total findings descendi
 
 ## Run Metadata Header
 
-```markdown
-# Site Audit: example.com
+The report begins with a metadata table before the summary:
 
-- **URL:** https://example.com
-- **Date:** 2026-01-23
-- **Pages crawled:** 34
-- **Total findings:** 13
+```markdown
+# Site Audit Report
+
+| Field | Value |
+|-------|-------|
+| Target URL | https://example.com |
+| Pages Crawled | 23 |
+| Page Cap | 50 |
+| Duration | 4m 32s |
+| Generated | 2026-01-23 14:30:00 UTC |
 ```
+
+Fields:
+- **Target URL**: The seed URL provided by the user
+- **Pages Crawled**: Number of pages actually visited (page_count from Phase 2)
+- **Page Cap**: The max_pages limit (default 50)
+- **Duration**: Time from crawl start to report generation (format: Xm Ys)
+- **Generated**: Timestamp when report was generated (ISO 8601)
+
+## Severity Assignment
+
+Severity is fixed per finding type (not context-dependent):
+
+| Finding Type | Severity |
+|-------------|----------|
+| Broken Links | error |
+| Console Errors | error |
+| Broken Resources | error |
+| Spelling Issues | warning |
+| Visual Issues | warning |
+
+- Severity is determined entirely by finding type
+- No "info" severity currently assigned (reserved for future finding types)
+- Each finding type table includes a Severity column
+- Summary counts table uses these rules for the breakdown
+
+## Table of Contents
+
+Conditional: Only generate TOC when total findings count >= 50.
+
+Format (when included):
+```markdown
+## Contents
+
+- [Summary](#summary)
+- [Broken Links](#broken-links) (3)
+- [Spelling Issues](#spelling-issues) (5)
+- [Console Errors](#console-errors) (2)
+- [Broken Resources](#broken-resources) (1)
+- [Visual Issues](#visual-issues) (2)
+- [Page Index](#page-index)
+```
+
+- Only include entries for finding types that have findings
+- Count in parentheses shows findings in that section
+- Anchor links use lowercase-hyphenated section names
+- When total findings < 50, skip TOC entirely (report is short enough to scan)
+
+## Large Report Truncation
+
+When a single finding type section exceeds 100 rows:
+
+- Show first 100 rows in the table
+- Add a note after the table:
+  ```markdown
+  > Showing 100 of {N} findings. Full data: `.audit-data/findings-{type}.jsonl`
+  ```
+- This prevents reports from becoming unreadably large
+- Raw JSONL always has complete data
+
+Truncation thresholds:
+- Per-section cap: 100 rows
+- Applies independently to each finding type section
+- Page index is never truncated (shows all pages with findings)
+- Summary counts always show true totals (not truncated counts)
