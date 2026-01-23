@@ -32,9 +32,9 @@
 
 ### Report
 
-- [ ] **RPT-01**: Generate structured markdown report file
-- [ ] **RPT-02**: Findings grouped by page and by issue type
-- [ ] **RPT-03**: Severity categorization (error/warning/info)
+- [x] **RPT-01**: Generate structured markdown report file
+- [x] **RPT-02**: Findings grouped by page and by issue type
+- [x] **RPT-03**: Severity categorization (error/warning/info)
 
 ## v2 Requirements
 
@@ -78,9 +78,9 @@
 | UI-01 | Phase 3 | Complete |
 | UI-02 | Phase 3 | Complete |
 | UI-03 | Phase 3 | Complete |
-| RPT-01 | Phase 4 | Pending |
-| RPT-02 | Phase 4 | Pending |
-| RPT-03 | Phase 4 | Pending |
+| RPT-01 | Phase 4 | Complete |
+| RPT-02 | Phase 4 | Complete |
+| RPT-03 | Phase 4 | Complete |
 
 **Coverage:**
 - v1 requirements: 16 total
