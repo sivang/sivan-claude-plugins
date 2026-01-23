@@ -188,16 +188,18 @@ After crawl completion, perform Chrome-based runtime checks on all visited pages
    ```bash
    touch .audit-data/findings-console-errors.jsonl
    touch .audit-data/findings-broken-resources.jsonl
+   touch .audit-data/findings-visual-issues.jsonl
    ```
 5. Initialize counters:
    - `page_check_count`: 0
    - `console_errors_count`: 0
    - `broken_resources_count`: 0
+   - `visual_issues_count`: 0
    - `total_pages`: length of visited set
 6. Display initialization summary to user:
    - Pages to check: [total_pages] (from Phase 2 crawl)
    - Chrome tab created: [tab_id]
-   - Findings files: `.audit-data/findings-console-errors.jsonl`, `.audit-data/findings-broken-resources.jsonl`
+   - Findings files: `.audit-data/findings-console-errors.jsonl`, `.audit-data/findings-broken-resources.jsonl`, `.audit-data/findings-visual-issues.jsonl`
    - Ask user to confirm before starting UI checks
 
 **UI Check Loop:**
@@ -242,33 +244,81 @@ Execute the following steps in order for each URL in visited pages:
        ```
      - Increment `broken_resources_count`
 
-6. **State update** -- After processing each page, increment page_check_count and output:
+6. **Visual layout check** -- Reference @references/UI_CHECKS.md for JavaScript snippets:
+   - Execute combined layout check JavaScript via `javascript_tool` on the same tab:
+     ```javascript
+     (function checkLayout() {
+       const vw = window.innerWidth;
+       const overflows = Array.from(document.querySelectorAll('*'))
+         .filter(el => {
+           const rect = el.getBoundingClientRect();
+           return rect.width > 0 && (rect.right > vw + 5 || rect.left < -5);
+         })
+         .map(el => {
+           const rect = el.getBoundingClientRect();
+           return {
+             issue: 'overflow',
+             tag: el.tagName,
+             id: el.id || '(none)',
+             class: el.className || '(none)',
+             width: Math.round(rect.width)
+           };
+         });
+       const collapsed = Array.from(document.querySelectorAll('div, section, article, main, aside, nav'))
+         .filter(el => {
+           const rect = el.getBoundingClientRect();
+           return el.children.length > 0 && (rect.height === 0 || rect.width === 0);
+         })
+         .map(el => {
+           const rect = el.getBoundingClientRect();
+           return {
+             issue: 'collapsed',
+             tag: el.tagName,
+             id: el.id || '(none)',
+             class: el.className || '(none)',
+             children: el.children.length
+           };
+         });
+       return { overflows, collapsed };
+     })();
+     ```
+   - Parse result object containing `overflows` and `collapsed` arrays
+   - For each overflow: format element string as `TAG#id.class`, record `"width: [N]px"` as details
+   - For each collapsed: format element string as `TAG#id.class`, record `"children: [N]"` as details
+   - Write each finding to JSONL:
+     ```bash
+     echo '{"type":"visual_issue","page":"[url]","issue":"overflow|collapsed","element":"[element_string]","details":"[details]","timestamp":"[iso8601]"}' >> .audit-data/findings-visual-issues.jsonl
+     ```
+   - Increment `visual_issues_count` for each finding
+
+7. **State update** -- After processing each page, increment page_check_count and output:
    ```
-   UI Check [page_check_count]/[total_pages]: [url] - [X] issues (console: [C], resources: [R])
+   UI Check [page_check_count]/[total_pages]: [url] - [X] issues (console: [C], resources: [R], visual: [V])
    ```
 
-7. **Detailed state** -- Every 5 pages (when page_check_count % 5 == 0), also output:
+8. **Detailed state** -- Every 5 pages (when page_check_count % 5 == 0), also output:
    ```
-   Total findings: [console_errors_count] console errors, [broken_resources_count] broken resources
+   Total findings: [console_errors_count] console errors, [broken_resources_count] broken resources, [visual_issues_count] visual issues
    Remaining: [remaining_count] pages
    ```
 
-8. **Loop back** -- Return to step 1 (progress check)
+9. **Loop back** -- Return to step 1 (progress check)
 
 **After UI check completion:**
 
 - Report total pages checked: [page_check_count]
-- Report total findings: [console_errors_count] console errors, [broken_resources_count] broken resources
-- Report findings files: `.audit-data/findings-console-errors.jsonl`, `.audit-data/findings-broken-resources.jsonl`
+- Report total findings: [console_errors_count] console errors, [broken_resources_count] broken resources, [visual_issues_count] visual issues
+- Report findings files: `.audit-data/findings-console-errors.jsonl`, `.audit-data/findings-broken-resources.jsonl`, `.audit-data/findings-visual-issues.jsonl`
 - Proceed to Phase 5
 
 **Notes:**
 - Single tab reuse pattern: create once, navigate for each page (do not create new tabs)
 - Clear console and network state between pages using `clear: true` parameter
-- Handle navigation errors: if page fails to load, log as console_error finding with message "Navigation timeout" and continue
+- Handle navigation errors: if page fails to load, log as console_error finding with message "Navigation timeout" and skip visual checks for that page
 - Progressive JSONL writing: same append pattern as Phase 2
 - Wait strategy: 3 seconds per page (max 5s if page is slow to load)
-- Reference @references/UI_CHECKS.md for all filtering and classification details
+- Visual layout checks run after console/network checks on the same already-loaded page (no additional navigation or wait needed)
+- Reference @references/UI_CHECKS.md for all filtering, classification, and visual check details
 
 **Phase 5: Report** (to be implemented)
 - Placeholder: Report that report generation is not yet implemented
@@ -284,7 +334,8 @@ Phases 1-2 and Phase 4 are implemented. After validating the URL, the skill will
 5. Write findings progressively to `.audit-data/` JSONL files
 6. Track external links for future verification
 7. Report crawl completion with findings summary
-8. Open each visited page in Chrome to check for console errors and broken resources
-9. Write UI check findings to dedicated JSONL files
+8. Open each visited page in Chrome to check for console errors, broken resources, and visual layout issues
+9. For each page: Navigate, Wait, Console check, Network check, Visual layout check, Report
+10. Write UI check findings to dedicated JSONL files (console-errors, broken-resources, visual-issues)
 
 External link verification (Phase 3) and final report (Phase 5) are coming in future updates.
