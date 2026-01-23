@@ -5,33 +5,33 @@
 See: .planning/PROJECT.md (updated 2026-01-22)
 
 **Core value:** Automated, thorough website quality assurance — catch every broken link, typo, and error across an entire site in one command.
-**Current focus:** Phase 3 - Chrome UI Checks (in progress)
+**Current focus:** Phase 3 complete - Chrome UI Checks done. Phase 4 (Report Generation) next.
 
 ## Current Position
 
-Phase: 3 of 4 in progress (Chrome UI Checks)
-Plan: 1 of 2 in Phase 3
-Status: In progress - 03-01 complete, 03-02 pending
-Last activity: 2026-01-23 — Completed 03-01-PLAN.md (Console Errors and Broken Resources)
+Phase: 3 of 4 complete (Chrome UI Checks)
+Plan: 2 of 2 in Phase 3
+Status: Phase 3 complete - all UI check plans executed
+Last activity: 2026-01-23 — Completed 03-02-PLAN.md (Visual Layout Checks)
 
-Progress: [██████░...] 62% (5/8 plans executed: 02-01, 02-02, 03-01 done; 03-02, 04-01, 04-02 pending)
+Progress: [███████░..] 75% (6/8 plans executed: 02-01, 02-02, 03-01, 03-02 done; 04-01, 04-02 pending)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 3
-- Average duration: 2m 48s
-- Total execution time: 0.14 hours
+- Total plans completed: 4
+- Average duration: 2m 46s
+- Total execution time: 0.18 hours
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
 | 2 | 2 | 5m 45s | 2m 52s |
-| 3 | 1 | 2m 35s | 2m 35s |
+| 3 | 2 | 5m 09s | 2m 34s |
 
 **Recent Trend:**
-- Last 5 plans: 02-01 (2m 7s), 02-02 (3m 38s), 03-01 (2m 35s)
+- Last 5 plans: 02-01 (2m 7s), 02-02 (3m 38s), 03-01 (2m 35s), 03-02 (2m 34s)
 - Trend: Consistent ~2.5-3.5 min per plan
 
 *Updated after each plan completion*
@@ -58,6 +58,10 @@ Recent decisions affecting current work:
 - Clear console/network state between pages with clear:true parameter (03-01)
 - Extension-based resource type classification for broken resource detection (03-01)
 - Filter chrome-extension:// and favicon 404s as browser noise (03-01)
+- 5px overflow threshold to avoid sub-pixel rounding false positives (03-02)
+- Skip overlap detection: O(n^2) cost and high false positive rate (03-02)
+- Combined checkLayout() function for single javascript_tool execution (03-02)
+- Semantic containers only for collapsed detection (03-02)
 
 ### Pending Todos
 
@@ -70,5 +74,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-01-23
-Stopped at: Completed 03-01-PLAN.md (console errors + broken resources)
+Stopped at: Completed 03-02-PLAN.md (visual layout checks) - Phase 3 complete
 Resume file: None
