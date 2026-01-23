@@ -324,6 +324,8 @@ Execute the following steps in order for each URL in visited pages:
 
 After UI checks complete, generate the structured markdown report.
 
+**Timing:** Record the current time. The audit start time is when Phase 2 began (crawl initialization). Calculate duration as the difference, formatted as "Xm Ys" (e.g., "4m 32s").
+
 **Report Generation:**
 
 1. **Reference rules** -- Reference @references/REPORT.md for format specification
@@ -347,9 +349,14 @@ After UI checks complete, generate the structured markdown report.
    - Count totals per type and per severity
    - If a file is empty or missing, that type has zero findings
 
-4. **Build run metadata** -- Create the report header:
-   - H1 title: `# Site Audit: {hostname}`
-   - Seed URL, date, pages crawled (from Phase 2 visited count), total findings
+4. **Build run metadata** -- Create the report header as a metadata table (see @references/REPORT.md for exact format):
+   - H1 title: `# Site Audit Report`
+   - Metadata table with fields:
+     - **Target URL**: seed URL from Phase 1
+     - **Pages Crawled**: page_count from Phase 2 (visited set size)
+     - **Page Cap**: max_pages value (default 50)
+     - **Duration**: calculated from audit start to now (format: Xm Ys)
+     - **Generated**: current timestamp in ISO 8601 format
 
 5. **Build summary counts** -- For each finding type, count findings by severity:
    - Broken links: all are "error"
@@ -361,24 +368,38 @@ After UI checks complete, generate the structured markdown report.
    - Only include rows for types that have findings
    - Calculate grand totals for the bold Total row
 
-6. **Build finding type sections** -- For each type that has findings, in order (Broken Links, Spelling Issues, Console Errors, Broken Resources, Visual Issues):
+6. **Conditional TOC** -- After summary counts, check total findings:
+   - If total findings >= 50: generate table of contents with anchor links to each section that has findings, with finding count in parentheses (see @references/REPORT.md for format)
+   - If total findings < 50: skip TOC entirely (report is short enough to scan)
+
+7. **Build finding type sections** -- For each type that has findings, in order (Broken Links, Spelling Issues, Console Errors, Broken Resources, Visual Issues):
    - Create H2 section header
-   - Build markdown table with type-specific columns (see @references/REPORT.md)
+   - Build markdown table with type-specific columns plus Severity column:
+     - Broken Links: `| Page | Target URL | Error | Severity |`
+     - Spelling: `| Page | Word | Suggestion | Context | Severity |`
+     - Console Errors: `| Page | Level | Message | Severity |`
+     - Broken Resources: `| Page | Resource URL | Type | Status | Severity |`
+     - Visual Issues: `| Page | Issue | Element | Details | Severity |`
+   - Severity values (fixed per type, see @references/REPORT.md severity section):
+     - Broken links, console errors, broken resources: "error"
+     - Spelling issues, visual issues: "warning"
    - One row per finding
    - Strip protocol and domain from same-domain URLs (show path only)
    - Truncate long messages to 100 chars
    - Context column for spelling: ~50 chars around the word, quoted
+   - **Truncation:** If a section has more than 100 findings, only include first 100 rows in table, then add: `> Showing 100 of {N} findings. Full data: \`.audit-data/findings-{type}.jsonl\``
+   - Summary counts always show true totals (not affected by truncation)
 
-7. **Build page index** -- Aggregate findings by page URL:
+8. **Build page index** -- Aggregate findings by page URL (using ALL findings, not truncated):
    - For each unique page URL across all findings
    - Count findings per type for that page
    - Sort by total findings descending (ties broken alphabetically by path)
    - Build the page index table (see @references/REPORT.md)
    - Only include pages that have at least one finding
+   - Page index is never truncated
 
-8. **Write report file** -- Assemble and write the complete report:
-   - Concatenate: metadata header + summary table + finding sections + page index
-   - If 50+ total findings, insert a table of contents after the summary
+9. **Write report file** -- Assemble and write the complete report:
+   - Concatenate: metadata header + summary table + [TOC if applicable] + finding sections + page index
    - Use the Write tool to write the markdown file to working directory root
    - File path: `./audit-{domain}-{date}.md`
 
