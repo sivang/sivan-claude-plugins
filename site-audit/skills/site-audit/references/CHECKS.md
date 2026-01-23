@@ -1,6 +1,6 @@
 # Content Analysis Rules
 
-This document defines the rules for analyzing page content during the crawl. It covers spelling/grammar analysis and dead link detection.
+This document defines the rules for analyzing page content during the Chrome-based crawl. It covers spelling/grammar analysis and broken link detection.
 
 ## Spelling & Grammar Analysis
 
@@ -8,7 +8,7 @@ This document defines the rules for analyzing page content during the crawl. It 
 
 ### Analysis Process
 
-1. **Analyze extracted page text** for typos and grammar issues
+1. **Get page text** using `get_page_text` tool on the current Chrome tab
 2. **Apply filtering rules** to exclude non-prose content
 3. **Flag only HIGH confidence errors** (obvious typos)
 4. **Provide context and suggestions** for each finding
@@ -61,87 +61,70 @@ Apply these filters to EXCLUDE content from spelling analysis:
 ```json
 {"type":"spelling","page":"https://example.com/about","word":"occured","suggestion":"occurred","context":"This occured during the migration process","timestamp":"2024-01-15T10:30:01Z"}
 {"type":"spelling","page":"https://example.com/blog/post","word":"recieve","suggestion":"receive","context":"You will recieve a confirmation email","timestamp":"2024-01-15T10:31:22Z"}
-{"type":"spelling","page":"https://example.com/docs","word":"the the","suggestion":"the","context":"in the the documentation section","timestamp":"2024-01-15T10:32:15Z"}
 ```
 
-## Dead Link Detection
+## Broken Link Detection (Chrome-Based)
 
-**Objective:** Identify internal same-domain links that return errors (404, timeout, connection failures).
+**Objective:** Identify internal same-domain links that lead to 404/error pages by actually navigating to them in Chrome.
 
-### What is a Dead Link?
+### How It Works
 
-A dead link is an **internal same-domain URL** that returns an error when fetched. Dead links break user navigation and hurt SEO.
+Unlike fetch-based testing, this approach navigates the Chrome browser to each discovered URL and checks whether the resulting page is a 404 error page. This is the same experience a real user would have.
 
-**Scope:**
+### Detection Method
+
+After navigating to a URL in Chrome and waiting for page load:
+
+1. **Check the tab title** (returned in tool responses):
+   - Contains "404" → broken
+   - Contains "not found" (case-insensitive) → broken
+   - Starts with "undefined" (e.g., "undefined | SiteName") → broken
+   - Contains "page not found" (case-insensitive) → broken
+
+2. **Check the page text content** (from `get_page_text`):
+   - Contains "404 ERROR" or "404 error" → broken
+   - Contains "page you're looking for wasn't found" → broken
+   - Contains "page not found" AND the page has minimal content → broken
+   - Contains "Oops!" combined with "not found" or "404" → broken
+
+3. **NOT broken indicators** (override the above):
+   - Page has substantial content (multiple paragraphs, navigation, forms)
+   - The "404" text is part of an article or documentation ABOUT error handling
+   - Page title is a normal descriptive title (e.g., "About Us | Company")
+
+### What Counts as a Source
+
+When a broken link is detected, record WHERE the link was found:
+- The `link_sources` map tracks which page each URL was first discovered on
+- Source is the page whose DOM contained the `<a href="...">` pointing to the broken URL
+- If the source is unknown, use "(seed)"
+
+### Scope
+
 - **Internal links only:** Same hostname as seed URL
-- **Error responses:** 404, 500, 503, timeouts, connection refused, DNS errors
-- **During crawl:** Detected when WebFetch fails to retrieve a page
-
-**Out of scope (not checked in Phase 2):**
-- External links (different domain) — deferred to separate phase
-- Redirect chains — followed automatically by WebFetch
-- Anchor links (#section) — not fetched separately
-
-### Detection Points
-
-Dead links are detected in **TWO scenarios:**
-
-**1. WebFetch fails on dequeued URL (immediate detection):**
-- URL was found on a page and added to queue
-- When dequeued and fetched, WebFetch returns an error
-- Record source page (where link was found), target URL (dead link), error type
-
-**2. WebFetch fails on initial seed URL:**
-- Rare case: seed URL itself is dead
-- Record source as "(seed)", target as seed URL, error type
-
-### Error Types
-
-Record the specific error returned by WebFetch:
-
-- `404` — Not Found
-- `500` — Internal Server Error
-- `503` — Service Unavailable
-- `timeout` — Request timed out
-- `connection_refused` — Connection refused
-- `dns_error` — DNS resolution failed
-- `ssl_error` — SSL/TLS error
-- `unknown` — Other error (include details if available)
+- **Navigation-based detection:** Actually visit each URL in Chrome
+- **No fetch/HEAD testing:** Never use JavaScript `fetch()` or HTTP HEAD requests to test links
 
 ### Finding Format
 
-Each dead link finding is a single-line JSON object:
-
 ```json
 {"type":"broken_link","page":"https://example.com/blog","target":"https://example.com/old-page","error":"404","timestamp":"2024-01-15T10:30:00Z"}
-{"type":"broken_link","page":"https://example.com/docs","target":"https://example.com/missing","error":"timeout","timestamp":"2024-01-15T10:35:12Z"}
 ```
 
 **Fields:**
 - `type`: Always "broken_link"
-- `page`: Source page URL (where the dead link was found)
-- `target`: The broken URL itself
-- `error`: Error type (404, timeout, etc.)
+- `page`: Source page URL (where the dead link was found in the DOM)
+- `target`: The broken URL itself (the page that shows 404)
+- `error`: Always "404" (since we're detecting error pages visually)
 - `timestamp`: ISO 8601 timestamp when detected
-
-### Special Cases
-
-**Source page tracking:**
-- Keep a map of `{target_url: source_page}` as you add URLs to queue
-- When a URL fails to fetch, look up its source page for the finding
-- If multiple pages link to the same dead URL, record the first source page encountered
-
-**Redirects:**
-- If WebFetch follows a redirect successfully, not a dead link (no finding)
-- If redirect chain fails (redirect to 404), record as dead link
 
 ## Progressive Writing
 
-Findings must be written to disk **progressively** as the crawl proceeds, not accumulated in memory.
+Findings must be written to disk **progressively** as the crawl proceeds.
 
 ### Storage Location
 
-All findings are stored in `.audit-data/` directory in the current working directory:
+All findings are stored in `.audit-data/` directory:
 
 ```
 .audit-data/
@@ -154,22 +137,3 @@ All findings are stored in `.audit-data/` directory in the current working direc
 - **JSONL format:** One JSON object per line
 - **Append-only:** Use `echo >> file` to append new findings
 - **Write immediately:** After analyzing each page, before moving to next
-
-### Writing Commands
-
-**For broken links:**
-```bash
-echo '{"type":"broken_link","page":"[source_url]","target":"[target_url]","error":"[error_type]","timestamp":"[iso8601]"}' >> .audit-data/findings-broken-links.jsonl
-```
-
-**For spelling issues:**
-```bash
-echo '{"type":"spelling","page":"[page_url]","word":"[misspelled]","suggestion":"[correction]","context":"[context_snippet]","timestamp":"[iso8601]"}' >> .audit-data/findings-spelling.jsonl
-```
-
-### Benefits of Progressive Writing
-
-- **Memory efficient:** No need to store thousands of findings in context
-- **Crash resilient:** Findings are preserved even if crawl is interrupted
-- **Real-time monitoring:** User can `tail -f` files to watch progress
-- **Incremental processing:** Report generation can start before crawl completes

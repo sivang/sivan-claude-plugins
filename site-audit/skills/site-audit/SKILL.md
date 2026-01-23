@@ -7,7 +7,7 @@ description: This skill should be used when the user invokes /site-audit with a 
 
 **Role:** Thorough website quality auditor.
 
-**Objective:** Crawl the provided URL and all reachable same-domain pages, checking for broken links, spelling/grammar errors, console errors, and visual issues. Produce a structured report of all findings.
+**Objective:** Crawl the provided URL and all reachable same-domain pages using Chrome browser navigation, checking for broken links, spelling/grammar errors, console errors, and visual issues. Produce a structured report of all findings.
 
 ## Input
 
@@ -17,14 +17,20 @@ If no URL is provided, ask the user for one. Validate that the input is a valid 
 
 ## Execution
 
-**Phase 1: URL Validation**
+**Phase 1: URL Validation & Browser Setup**
+
 1. Extract the URL from the user's command
 2. Validate it starts with http:// or https://
-3. Confirm the target domain with the user
+3. Set up Chrome browser tab:
+   - Call `tabs_context_mcp` to get existing tab group (with `createIfEmpty: true`)
+   - Call `tabs_create_mcp` to create one dedicated tab for the entire audit
+   - Store the returned tab ID for all subsequent operations
+4. Navigate to the seed URL to verify it loads
+5. Confirm the target domain with the user
 
-**Phase 2: Crawl**
+**Phase 2: Chrome-Based Crawl**
 
-After URL validation, begin the breadth-first crawl process.
+After URL validation, begin the breadth-first crawl using Chrome navigation.
 
 **Initialization:**
 
@@ -33,8 +39,8 @@ After URL validation, begin the breadth-first crawl process.
    - `queue`: List containing only the seed URL (normalized)
    - `visited`: Empty set for tracking crawled URLs
    - `page_count`: 0
-   - `max_pages`: 50 (crawl limit)
-   - `external_links`: Empty list for recording off-domain links
+   - `max_pages`: 20 (crawl limit — keeps audit focused)
+   - `broken_links`: Empty list for recording dead links with source info
    - `seed_hostname`: Extracted hostname from seed URL (for same-domain checks)
    - `link_sources`: Map of {target_url: source_page} for dead link tracking
    - `broken_links_count`: 0
@@ -46,13 +52,13 @@ After URL validation, begin the breadth-first crawl process.
    touch .audit-data/findings-spelling.jsonl
    ```
 4. Reference @references/URL_RULES.md for URL normalization rules
-5. Reference @references/CHECKS.md for content analysis rules
+5. Reference @references/CHECKS.md for content analysis and broken link detection rules
 6. Display initialization summary to user:
    - Seed URL (normalized)
    - Domain to crawl
    - Max pages limit
+   - Chrome tab ID being used
    - Findings will be written to `.audit-data/` directory
-   - Ask user to confirm before starting crawl
 
 **Crawl Loop:**
 
@@ -66,124 +72,89 @@ Execute the following steps in order, looping until termination:
 
 4. **Mark visited** — Add current URL to visited set, increment page_count
 
-5. **Fetch page** — Use WebFetch with this exact prompt:
+5. **Navigate in Chrome** — Navigate the Chrome tab to the current URL:
+   - Use the `navigate` tool with the stored tab ID
+   - Wait 3 seconds for page load
+
+6. **Check for 404/error page** — Reference @references/CHECKS.md for detection rules:
+   - Read the page title using tabs context (check tab title in tool response)
+   - Use `get_page_text` to get page content
+   - A page is broken if ANY of these are true:
+     - Tab title contains "404", "not found" (case-insensitive), or starts with "undefined"
+     - Page text content starts with "404" or contains "page you're looking for wasn't found" or similar 404 patterns
+   - **If page is broken:**
+     - Get source page from `link_sources` map (use current URL as key)
+     - If source not found, use "(seed)" as source
+     - Record finding:
+       ```bash
+       echo '{"type":"broken_link","page":"[source_page]","target":"[current_url]","error":"404","timestamp":"[iso8601_timestamp]"}' >> .audit-data/findings-broken-links.jsonl
+       ```
+     - Increment `broken_links_count`
+     - Skip to step 11 (loop back) — no links to extract from 404 page
+
+7. **Extract links from DOM** — Execute JavaScript on the Chrome tab to get all actual link hrefs:
+   ```javascript
+   (function() {
+     const links = Array.from(document.querySelectorAll('a[href]'))
+       .map(a => ({ href: a.href, text: a.textContent.trim().substring(0, 50) }))
+       .filter(l => l.href && !l.href.startsWith('javascript:') && !l.href.startsWith('mailto:') && !l.href.startsWith('tel:'));
+     return JSON.stringify(links);
+   })()
    ```
-   Extract from this page:
-   1) All links in [text](url) format, one per line. Include every <a href="...">, <link href="...">, and <area href="..."> element.
-   2) Main text content of the page (skip code blocks, navigation, footer).
+   This extracts the **actual resolved href** values from the DOM, not guessed URLs.
 
-   Format your response as:
-   LINKS:
-   [Homepage](/)
-   [About](/about)
-
-   CONTENT:
-   [page text content here]
-   ```
-
-   **If WebFetch returns an error (404, timeout, connection refused, etc.):**
-   - This is a broken link — the current URL is dead
-   - Get source page from `link_sources` map (use current URL as key)
-   - If source not found, use "(seed)" as source
-   - Record finding:
-     ```bash
-     echo '{"type":"broken_link","page":"[source_page]","target":"[current_url]","error":"[error_type]","timestamp":"[iso8601_timestamp]"}' >> .audit-data/findings-broken-links.jsonl
-     ```
-   - Increment `broken_links_count`
-   - Skip to step 11 (loop back) — no links to extract from failed page
-
-6. **Parse response** — Split WebFetch response into two sections:
-   - Extract links from "LINKS:" section using pattern `[text](url)`
-   - Extract page text content from "CONTENT:" section for analysis
-
-7. **Normalize URLs** — For each extracted URL:
-   - Resolve relative URLs to absolute using current page URL as base
-   - Apply all 7 normalization rules from @references/URL_RULES.md in order
-   - Result: canonical absolute URL
-
-8. **Classify and route** — For each normalized URL:
-   - **Skip check:** If URL matches any skip rule (mailto:, .pdf, .jpg, etc. per URL_RULES.md), discard it
+8. **Classify and route** — For each extracted link:
+   - Reference @references/URL_RULES.md for normalization and classification rules
+   - **Skip check:** If URL matches any skip rule (mailto:, .pdf, .jpg, etc.), discard it
    - **Same-domain check:** Extract hostname, compare with seed_hostname using strict matching (www. is significant)
-   - **If same-domain:** Add to queue (if not already in visited set), record in `link_sources` map: `link_sources[normalized_url] = current_page_url`
-   - **If external:** Add to external_links list with source page reference
-   - **If skip:** Discard (don't crawl, don't record)
+   - **If same-domain AND not already in visited set:** Add to queue, record in `link_sources` map: `link_sources[normalized_url] = current_page_url`
+   - **If external:** Skip (external link verification is out of scope)
 
-9. **Analyze content** — Reference @references/CHECKS.md for detailed rules. Analyze the page text content extracted in step 6:
-
-   **Spelling/Grammar Check:**
-   - Apply filtering rules to exclude non-prose content:
-     - Code blocks (indented text, ```fenced```, `inline`)
-     - Technical identifiers (camelCase, SCREAMING_CASE, snake_case)
-     - URLs, email addresses, domain names
-     - Brand/product names (Capitalized words, acronyms)
-   - Identify HIGH confidence spelling errors only:
-     - Obvious typos: "occured" → "occurred", "recieve" → "receive"
-     - Repeated words: "the the" → "the"
-     - Common misspellings: "seperate" → "separate"
-   - For each error found:
-     - Extract context snippet (~50 chars before/after)
-     - Determine suggested correction
-     - Get current timestamp in ISO 8601 format
-     - Write finding to JSONL:
+9. **Analyze content** — Reference @references/CHECKS.md for detailed rules:
+   - Use the page text already extracted in step 6 (from `get_page_text`)
+   - **Spelling/Grammar Check:**
+     - Apply filtering rules to exclude non-prose content
+     - Identify HIGH confidence spelling errors only
+     - For each error found, write finding to JSONL:
        ```bash
        echo '{"type":"spelling","page":"[current_url]","word":"[misspelled]","suggestion":"[correction]","context":"[snippet]","timestamp":"[iso8601]"}' >> .audit-data/findings-spelling.jsonl
        ```
      - Increment `spelling_issues_count`
 
-   **Note:** Dead link detection for this page already happened in step 5 (if WebFetch failed). This step only analyzes successfully fetched content.
-
 10. **State update** — After processing each page, output:
-   ```
-   Page [page_count]/[max_pages]: [current_url] - [issues_found_this_page] issues (broken links: [B], spelling: [S])
-   Queue: [queue_length] URLs remaining
-   ```
-
-11. **Detailed state** — Every 5 pages (when page_count % 5 == 0), also output:
     ```
-    Visited: [visited_count] pages
-    External links found: [external_links_count]
-    Total findings: [broken_links_count] broken links, [spelling_issues_count] spelling issues
-    Next in queue: [first 3 URLs from queue, or "empty"]
+    Page [page_count]/[max_pages]: [current_url] - [issues_found_this_page] issues
+    Queue: [queue_length] URLs remaining
     ```
 
-12. **Loop back** — Return to step 1 (termination check)
+11. **Loop back** — Return to step 1 (termination check)
 
 **After crawl completion:**
 
 - Report total pages crawled
 - Report queue status (exhausted or hit page limit)
-- Report external links count
 - Report total findings: broken links and spelling issues
-- Report findings files: `.audit-data/findings-broken-links.jsonl` and `.audit-data/findings-spelling.jsonl`
 - Proceed to Phase 3
 
 **Notes:**
-- Normalize URLs BEFORE adding to queue or visited set (prevents duplicates like `/page` and `/page/`)
-- Dead link detection happens in TWO places:
-  - **Immediate:** When WebFetch fails to fetch a dequeued URL (step 5)
-  - **Deferred:** When a link found on page A points to URL B, and URL B fails when later dequeued
-- Source page tracking via `link_sources` map enables accurate broken link reporting
-- Content analysis (step 9) only runs for successfully fetched pages (WebFetch returned content)
-- Findings are written progressively to disk (JSONL append) to avoid memory overflow on large sites
-- Store external_links for future external link verification (not implemented yet in Phase 2)
-- HTTPS preference rule (rule 7): If you encounter both http:// and https:// versions, only queue the https:// version
+- ALL link discovery uses JavaScript on the actual DOM — never construct or guess URLs
+- Broken link detection happens by navigating to the URL in Chrome and checking the result
+- The `a.href` property in JavaScript returns the fully resolved absolute URL (browser handles relative URL resolution)
+- Use the same Chrome tab for the entire crawl (navigate between pages)
+- If JavaScript execution is blocked on a page, fall back to `get_page_text` and extract visible link text, but do NOT attempt to construct URLs from link text
 
 **Phase 3: External Link Verification** (to be implemented)
 - Placeholder: Report that external link verification is not yet implemented
-- Target: Verify external links collected during crawl (different domains)
 
 **Phase 4: UI Checks**
 
-After crawl completion, perform Chrome-based runtime checks on all visited pages to detect console errors and broken resources that backend-only crawling cannot find.
+After crawl completion, perform Chrome-based runtime checks on all visited pages to detect console errors, broken resources, and visual issues.
 
 **Initialization:**
 
 1. Reference @references/UI_CHECKS.md for console filtering and resource classification rules
 2. Get the visited pages list from Phase 2 crawl context (the `visited` set)
-3. Create a Chrome tab for UI checks:
-   - Call `tabs_context_mcp` to get existing tab group
-   - Call `tabs_create_mcp` to create one dedicated tab for all UI checks
-   - Store the returned tab ID for all subsequent navigations
+3. Reuse the same Chrome tab from Phase 2 (no need to create a new one)
 4. Initialize JSONL findings files:
    ```bash
    touch .audit-data/findings-console-errors.jsonl
@@ -196,229 +167,90 @@ After crawl completion, perform Chrome-based runtime checks on all visited pages
    - `broken_resources_count`: 0
    - `visual_issues_count`: 0
    - `total_pages`: length of visited set
-6. Display initialization summary to user:
-   - Pages to check: [total_pages] (from Phase 2 crawl)
-   - Chrome tab created: [tab_id]
-   - Findings files: `.audit-data/findings-console-errors.jsonl`, `.audit-data/findings-broken-resources.jsonl`, `.audit-data/findings-visual-issues.jsonl`
-   - Ask user to confirm before starting UI checks
 
 **UI Check Loop:**
 
 Execute the following steps in order for each URL in visited pages:
 
-1. **Progress check** -- If page_check_count >= total_pages, exit loop and proceed to completion
+1. **Progress check** — If page_check_count >= total_pages, exit loop and proceed to completion
 
-2. **Navigate** -- Navigate the Chrome tab to the current URL using the navigate tool with the stored tab ID
+2. **Navigate** — Navigate the Chrome tab to the current URL
 
-3. **Wait** -- Wait 3 seconds for page load (scripts, resources, async content)
+3. **Wait** — Wait 3 seconds for page load (scripts, resources, async content)
 
-4. **Console error check** -- Reference @references/UI_CHECKS.md for filtering rules:
+4. **Console error check** — Reference @references/UI_CHECKS.md for filtering rules:
    - Call `read_console_messages` with `{"tabId": tab_id, "onlyErrors": true, "clear": true}`
    - Filter out messages from `chrome-extension://` URLs
    - Filter out favicon 404 messages
    - For each remaining error message:
-     - Extract level (error/warning) and message text (truncate to 500 chars)
-     - Get current timestamp in ISO 8601 format
      - Write finding to JSONL:
        ```bash
        echo '{"type":"console_error","page":"[url]","level":"[level]","message":"[msg]","timestamp":"[iso8601]"}' >> .audit-data/findings-console-errors.jsonl
        ```
      - Increment `console_errors_count`
 
-5. **Broken resource check** -- Reference @references/UI_CHECKS.md for classification rules:
+5. **Broken resource check** — Reference @references/UI_CHECKS.md for classification rules:
    - Call `read_network_requests` with `{"tabId": tab_id, "clear": true}`
    - Filter for failed requests: status >= 400 or status == 0
    - Filter out `chrome-extension://` requests
    - For each broken resource:
-     - Classify resource type by URL extension:
-       - `.jpg`, `.jpeg`, `.png`, `.gif`, `.svg`, `.webp`, `.ico` -> `image`
-       - `.css` -> `style`
-       - `.js` -> `script`
-       - `.woff`, `.woff2`, `.ttf`, `.eot` -> `font`
-       - Other -> `other`
-     - Extract resource_url, resource_type, status
-     - Get current timestamp in ISO 8601 format
-     - Write finding to JSONL:
-       ```bash
-       echo '{"type":"broken_resource","page":"[url]","resource_url":"[failed_url]","resource_type":"[type]","status":"[status]","timestamp":"[iso8601]"}' >> .audit-data/findings-broken-resources.jsonl
-       ```
+     - Write finding to JSONL
      - Increment `broken_resources_count`
 
-6. **Visual layout check** -- Reference @references/UI_CHECKS.md for JavaScript snippets:
-   - Execute combined layout check JavaScript via `javascript_tool` on the same tab:
-     ```javascript
-     (function checkLayout() {
-       const vw = window.innerWidth;
-       const overflows = Array.from(document.querySelectorAll('*'))
-         .filter(el => {
-           const rect = el.getBoundingClientRect();
-           return rect.width > 0 && (rect.right > vw + 5 || rect.left < -5);
-         })
-         .map(el => {
-           const rect = el.getBoundingClientRect();
-           return {
-             issue: 'overflow',
-             tag: el.tagName,
-             id: el.id || '(none)',
-             class: el.className || '(none)',
-             width: Math.round(rect.width)
-           };
-         });
-       const collapsed = Array.from(document.querySelectorAll('div, section, article, main, aside, nav'))
-         .filter(el => {
-           const rect = el.getBoundingClientRect();
-           return el.children.length > 0 && (rect.height === 0 || rect.width === 0);
-         })
-         .map(el => {
-           const rect = el.getBoundingClientRect();
-           return {
-             issue: 'collapsed',
-             tag: el.tagName,
-             id: el.id || '(none)',
-             class: el.className || '(none)',
-             children: el.children.length
-           };
-         });
-       return { overflows, collapsed };
-     })();
-     ```
-   - Parse result object containing `overflows` and `collapsed` arrays
-   - For each overflow: format element string as `TAG#id.class`, record `"width: [N]px"` as details
-   - For each collapsed: format element string as `TAG#id.class`, record `"children: [N]"` as details
-   - Write each finding to JSONL:
-     ```bash
-     echo '{"type":"visual_issue","page":"[url]","issue":"overflow|collapsed","element":"[element_string]","details":"[details]","timestamp":"[iso8601]"}' >> .audit-data/findings-visual-issues.jsonl
-     ```
-   - Increment `visual_issues_count` for each finding
+6. **Visual layout check** — Reference @references/UI_CHECKS.md for JavaScript snippets:
+   - Execute combined layout check JavaScript
+   - Write each finding to JSONL
+   - Increment `visual_issues_count`
 
-7. **State update** -- After processing each page, increment page_check_count and output:
-   ```
-   UI Check [page_check_count]/[total_pages]: [url] - [X] issues (console: [C], resources: [R], visual: [V])
-   ```
+7. **State update** — After processing each page, increment page_check_count and output progress
 
-8. **Detailed state** -- Every 5 pages (when page_check_count % 5 == 0), also output:
-   ```
-   Total findings: [console_errors_count] console errors, [broken_resources_count] broken resources, [visual_issues_count] visual issues
-   Remaining: [remaining_count] pages
-   ```
-
-9. **Loop back** -- Return to step 1 (progress check)
+8. **Loop back** — Return to step 1 (progress check)
 
 **After UI check completion:**
-
-- Report total pages checked: [page_check_count]
-- Report total findings: [console_errors_count] console errors, [broken_resources_count] broken resources, [visual_issues_count] visual issues
-- Report findings files: `.audit-data/findings-console-errors.jsonl`, `.audit-data/findings-broken-resources.jsonl`, `.audit-data/findings-visual-issues.jsonl`
+- Report total pages checked
+- Report total findings
 - Proceed to Phase 5
 
 **Notes:**
-- Single tab reuse pattern: create once, navigate for each page (do not create new tabs)
-- Clear console and network state between pages using `clear: true` parameter
-- Handle navigation errors: if page fails to load, log as console_error finding with message "Navigation timeout" and skip visual checks for that page
-- Progressive JSONL writing: same append pattern as Phase 2
-- Wait strategy: 3 seconds per page (max 5s if page is slow to load)
-- Visual layout checks run after console/network checks on the same already-loaded page (no additional navigation or wait needed)
+- Single tab reuse: same tab used throughout Phase 2 and Phase 4
+- Clear console and network state between pages using `clear: true`
 - Reference @references/UI_CHECKS.md for all filtering, classification, and visual check details
 
 **Phase 5: Report**
 
 After UI checks complete, generate the structured markdown report.
 
-**Timing:** Record the current time. The audit start time is when Phase 2 began (crawl initialization). Calculate duration as the difference, formatted as "Xm Ys" (e.g., "4m 32s").
-
 **Report Generation:**
 
-1. **Reference rules** -- Reference @references/REPORT.md for format specification
+1. **Reference rules** — Reference @references/REPORT.md for format specification
 
-2. **Generate filename** -- Derive report filename:
-   - Extract hostname from seed URL
-   - Replace dots with hyphens (e.g., `example.com` -> `example-com`)
-   - Get current date in YYYY-MM-DD format
-   - Result: `audit-{domain}-{date}.md` (e.g., `audit-example-com-2026-01-23.md`)
+2. **Generate filename** — `audit-{domain}-{date}.md` (domain with dots replaced by hyphens)
 
-3. **Read all JSONL findings** -- Read each findings file:
-   ```bash
-   cat .audit-data/findings-broken-links.jsonl 2>/dev/null
-   cat .audit-data/findings-spelling.jsonl 2>/dev/null
-   cat .audit-data/findings-console-errors.jsonl 2>/dev/null
-   cat .audit-data/findings-broken-resources.jsonl 2>/dev/null
-   cat .audit-data/findings-visual-issues.jsonl 2>/dev/null
-   ```
-   - Parse each line as JSON
-   - Group findings by type
-   - Count totals per type and per severity
-   - If a file is empty or missing, that type has zero findings
+3. **Read all JSONL findings** — Read each findings file, parse JSON, group by type
 
-4. **Build run metadata** -- Create the report header as a metadata table (see @references/REPORT.md for exact format):
-   - H1 title: `# Site Audit Report`
-   - Metadata table with fields:
-     - **Target URL**: seed URL from Phase 1
-     - **Pages Crawled**: page_count from Phase 2 (visited set size)
-     - **Page Cap**: max_pages value (default 50)
-     - **Duration**: calculated from audit start to now (format: Xm Ys)
-     - **Generated**: current timestamp in ISO 8601 format
+4. **Build report** — Following @references/REPORT.md format:
+   - Run metadata header (seed URL, pages crawled, duration, timestamp)
+   - Summary counts table
+   - Conditional TOC (if 50+ findings)
+   - Finding type sections with markdown tables
+   - Page index sorted by total findings
 
-5. **Build summary counts** -- For each finding type, count findings by severity:
-   - Broken links: all are "error"
-   - Console errors: all are "error"
-   - Broken resources: all are "error"
-   - Spelling issues: all are "warning"
-   - Visual issues: all are "warning"
-   - Build the summary table (see @references/REPORT.md for format)
-   - Only include rows for types that have findings
-   - Calculate grand totals for the bold Total row
-
-6. **Conditional TOC** -- After summary counts, check total findings:
-   - If total findings >= 50: generate table of contents with anchor links to each section that has findings, with finding count in parentheses (see @references/REPORT.md for format)
-   - If total findings < 50: skip TOC entirely (report is short enough to scan)
-
-7. **Build finding type sections** -- For each type that has findings, in order (Broken Links, Spelling Issues, Console Errors, Broken Resources, Visual Issues):
-   - Create H2 section header
-   - Build markdown table with type-specific columns plus Severity column:
-     - Broken Links: `| Page | Target URL | Error | Severity |`
-     - Spelling: `| Page | Word | Suggestion | Context | Severity |`
-     - Console Errors: `| Page | Level | Message | Severity |`
-     - Broken Resources: `| Page | Resource URL | Type | Status | Severity |`
-     - Visual Issues: `| Page | Issue | Element | Details | Severity |`
-   - Severity values (fixed per type, see @references/REPORT.md severity section):
-     - Broken links, console errors, broken resources: "error"
-     - Spelling issues, visual issues: "warning"
-   - One row per finding
-   - Strip protocol and domain from same-domain URLs (show path only)
-   - Truncate long messages to 100 chars
-   - Context column for spelling: ~50 chars around the word, quoted
-   - **Truncation:** If a section has more than 100 findings, only include first 100 rows in table, then add: `> Showing 100 of {N} findings. Full data: \`.audit-data/findings-{type}.jsonl\``
-   - Summary counts always show true totals (not affected by truncation)
-
-8. **Build page index** -- Aggregate findings by page URL (using ALL findings, not truncated):
-   - For each unique page URL across all findings
-   - Count findings per type for that page
-   - Sort by total findings descending (ties broken alphabetically by path)
-   - Build the page index table (see @references/REPORT.md)
-   - Only include pages that have at least one finding
-   - Page index is never truncated
-
-9. **Write report file** -- Assemble and write the complete report:
-   - Concatenate: metadata header + summary table + [TOC if applicable] + finding sections + page index
-   - Use the Write tool to write the markdown file to working directory root
-   - File path: `./audit-{domain}-{date}.md`
+5. **Write report file** — Use the Write tool to save to working directory root
 
 **After report generation:**
 - Report file path to user
 - Report total findings count and breakdown by type
-- Note that raw JSONL data is preserved in `.audit-data/` for further analysis
 - Audit is complete
 
 ## Current Status
 
 All phases are implemented. After validating the URL, the skill will:
-1. Confirm the target domain
-2. Initialize crawl state with BFS queue and JSONL findings files
-3. Crawl up to 50 same-domain pages using WebFetch
-4. For each page: detect broken links, analyze spelling/grammar, extract links
-5. Write findings progressively to `.audit-data/` JSONL files
-6. Open each visited page in Chrome for console errors, broken resources, and visual issues
-7. Generate structured markdown report with findings grouped by type and page index
-8. Write report to `audit-{domain}-{date}.md` in working directory
+1. Set up a Chrome browser tab
+2. Navigate to pages using Chrome (real browser navigation)
+3. Extract links from the actual DOM using JavaScript (real `href` attributes)
+4. Detect broken links by navigating to them and checking for 404 page indicators
+5. Analyze page text for spelling errors using `get_page_text`
+6. Check each page for console errors, broken resources, and visual issues
+7. Generate structured markdown report
 
 External link verification (Phase 3) is coming in future updates.

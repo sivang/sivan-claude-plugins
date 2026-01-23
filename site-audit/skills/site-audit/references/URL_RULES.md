@@ -60,15 +60,21 @@ Skip these URLs entirely (don't crawl, don't record as external):
 - Empty href: `href=""`
 - Same-page references: URLs that normalize to current page URL
 
-## Parsing Link Extraction Format
+## Chrome DOM Link Extraction
 
-When using WebFetch with link extraction prompt, expect output like:
+Links are extracted from the DOM using JavaScript executed on the Chrome tab:
 
+```javascript
+(function() {
+  const links = Array.from(document.querySelectorAll('a[href]'))
+    .map(a => ({ href: a.href, text: a.textContent.trim().substring(0, 50) }))
+    .filter(l => l.href && !l.href.startsWith('javascript:') && !l.href.startsWith('mailto:') && !l.href.startsWith('tel:'));
+  return JSON.stringify(links);
+})()
 ```
-[Homepage](/)
-[About Us](/about)
-[Contact](/contact)
-[External Site](https://other.com)
-```
 
-Parse pattern: `[text](url)` using regex or simple bracket parsing
+**Key behavior:**
+- `a.href` returns the **fully resolved absolute URL** (browser handles relative resolution)
+- No need to manually resolve relative URLs — the browser does this automatically
+- The extracted URLs are the exact same URLs a user would navigate to by clicking the link
+- If JavaScript execution is blocked (e.g., by CSP), skip link extraction for that page — do NOT guess URLs
