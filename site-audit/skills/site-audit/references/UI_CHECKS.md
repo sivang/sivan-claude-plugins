@@ -218,3 +218,132 @@ echo '{"type":"broken_resource","page":"[url]","resource_url":"[failed_url]","re
 - **Memory efficient:** No need to store all findings in conversation context
 - **Crash resilient:** Findings preserved even if audit is interrupted
 - **Consistent:** Same pattern as Phase 2 (broken links, spelling) — familiar to the skill
+
+## Visual Layout Checks
+
+**Objective:** Detect visual layout problems (horizontal overflow, collapsed containers) using JavaScript-based DOM inspection. These checks catch CSS/rendering issues that are invisible to backend crawling.
+
+### Tool
+
+`javascript_tool` — Execute JavaScript on the current Chrome tab after navigation and wait period.
+
+### Horizontal Overflow Detection
+
+Find elements wider than the viewport, indicating broken layouts or CSS overflow issues.
+
+```javascript
+const vw = window.innerWidth;
+Array.from(document.querySelectorAll('*')).filter(el => {
+  const rect = el.getBoundingClientRect();
+  return rect.width > 0 && (rect.right > vw + 5 || rect.left < -5);
+}).map(el => ({
+  tag: el.tagName,
+  id: el.id || '(none)',
+  class: el.className || '(none)',
+  width: Math.round(el.getBoundingClientRect().width)
+}))
+```
+
+**Threshold:** 5px tolerance to avoid false positives from sub-pixel rounding and scrollbar variations.
+
+### Collapsed Container Detection
+
+Find semantic containers that have children but zero height or width, indicating CSS collapse issues (missing clearfix, broken flexbox, etc.).
+
+```javascript
+Array.from(document.querySelectorAll('div, section, article, main, aside, nav'))
+  .filter(el => {
+    const rect = el.getBoundingClientRect();
+    const hasChildren = el.children.length > 0;
+    return hasChildren && (rect.height === 0 || rect.width === 0);
+  })
+  .map(el => ({
+    tag: el.tagName,
+    id: el.id || '(none)',
+    class: el.className || '(none)',
+    children: el.children.length,
+    height: el.getBoundingClientRect().height,
+    width: el.getBoundingClientRect().width
+  }))
+```
+
+**Scope:** Only checks semantic containers (`div`, `section`, `article`, `main`, `aside`, `nav`). Empty containers (no children) are excluded since they may be intentionally hidden.
+
+### Overlap Detection -- SKIP
+
+Overlap detection (checking if elements visually overlap unintentionally) is deliberately excluded:
+
+- **Performance:** O(n^2) comparison of all element pairs is too expensive for large pages
+- **False positives:** Dropdowns, tooltips, modals, sticky headers, and overlays all produce intentional overlaps
+- **Recommendation:** Skip overlap detection for skill-based checks; visual screenshot comparison is more appropriate for this class of issues
+
+### Combined Check Function
+
+A single JavaScript snippet that performs both overflow and collapsed container detection in one execution:
+
+```javascript
+(function checkLayout() {
+  const vw = window.innerWidth;
+  const overflows = Array.from(document.querySelectorAll('*'))
+    .filter(el => {
+      const rect = el.getBoundingClientRect();
+      return rect.width > 0 && (rect.right > vw + 5 || rect.left < -5);
+    })
+    .map(el => {
+      const rect = el.getBoundingClientRect();
+      return {
+        issue: 'overflow',
+        tag: el.tagName,
+        id: el.id || '(none)',
+        class: el.className || '(none)',
+        width: Math.round(rect.width)
+      };
+    });
+
+  const collapsed = Array.from(document.querySelectorAll('div, section, article, main, aside, nav'))
+    .filter(el => {
+      const rect = el.getBoundingClientRect();
+      return el.children.length > 0 && (rect.height === 0 || rect.width === 0);
+    })
+    .map(el => {
+      const rect = el.getBoundingClientRect();
+      return {
+        issue: 'collapsed',
+        tag: el.tagName,
+        id: el.id || '(none)',
+        class: el.className || '(none)',
+        children: el.children.length
+      };
+    });
+
+  return { overflows, collapsed };
+})();
+```
+
+**Returns:** Object with two arrays:
+- `overflows`: Elements extending beyond viewport (each with `issue`, `tag`, `id`, `class`, `width`)
+- `collapsed`: Zero-dimension containers with children (each with `issue`, `tag`, `id`, `class`, `children`)
+
+### JSONL Format
+
+```json
+{"type":"visual_issue","page":"https://example.com/about","issue":"overflow","element":"DIV#hero.hero-banner","details":"width: 1450px","timestamp":"2024-01-15T10:30:01Z"}
+{"type":"visual_issue","page":"https://example.com/blog","issue":"collapsed","element":"SECTION#content.main-content","details":"children: 5","timestamp":"2024-01-15T10:31:22Z"}
+```
+
+**Fields:**
+- `type`: Always `"visual_issue"`
+- `page`: URL of the page where issue was detected
+- `issue`: One of `"overflow"` or `"collapsed"`
+- `element`: Formatted as `TAG#id.class` (e.g., `DIV#sidebar.nav-wrapper`)
+- `details`: For overflow: `"width: [N]px"`, for collapsed: `"children: [N]"`
+- `timestamp`: ISO 8601 timestamp when detected
+
+### Usage Notes
+
+- Execute via `javascript_tool` after console/network checks complete (same tab, already navigated)
+- Parse the returned object: iterate `overflows` array and `collapsed` array separately
+- Format element string as `TAG#id.class` for human-readable identification
+- Write each finding individually to JSONL (append pattern)
+- Skip visual checks if page failed to load (navigation timeout logged in step 2)
+- No additional wait needed: page is already loaded from the 3-second wait in step 3
