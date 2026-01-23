@@ -69,11 +69,11 @@ Plans:
   1. A markdown report file is generated at a predictable path after audit completes
   2. Findings are grouped both by page and by issue type for easy navigation
   3. Each finding has a severity level (error/warning/info) so users can prioritize fixes
-**Plans**: TBD (1-2 plans)
+**Plans:** 2 plans
 
 Plans:
-- [ ] 04-01: Report structure and grouping
-- [ ] 04-02: Severity categorization and final output
+- [ ] 04-01-PLAN.md — Report structure, type-based grouping, summary counts, and page index
+- [ ] 04-02-PLAN.md — Severity categorization, run metadata, conditional TOC, and truncation
 
 ## Progress
 
