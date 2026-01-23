@@ -22,7 +22,7 @@
     {
       "name": "site-audit",
       "description": "Crawl a website and produce a comprehensive quality audit covering broken links, spelling errors, console errors, and visual issues",
-      "version": "0.1.0",
+      "version": "1.0.0",
       "source": "./site-audit",
       "author": {
         "name": "Sivan Grünberg",

@@ -1,68 +1,137 @@
 # Sivan's Claude Code Plugins
 
-> *"Because your AI pair programmer shouldn't have the memory of a goldfish."*
+A collection of Claude Code plugins for developer productivity. Built by [Sivan Grunberg](https://github.com/sivang) at [Vitakka Consulting](https://vitakka.co).
 
-Session management plugins for Claude Code - save your work at session end and pick up where you left off. No more "where were we?" moments. No more lost context. Just smooth, continuous development across sessions.
+## Plugins
 
-**This marketplace is just getting started.** More tools are brewing in the lab - bookmark it, star it, or add it now and watch it grow.
+| Plugin | Version | Description |
+|--------|---------|-------------|
+| [session-workflow](#session-workflow) | 1.0.0 | Session context preservation and restoration |
+| [site-audit](#site-audit) | 1.0.0 | Automated website quality auditing |
 
-## Included Skills
+---
 
-### `/doomsday` - The Paranoid Shutdown Protocol
+## session-workflow
 
-> *"Treat this as if the server is about to be wiped and rebuild must happen from these files alone."*
+Session management for Claude Code — save your work context at session end and pick up where you left off.
 
-Your AI transforms into a **Paranoid Lead Architect** who refuses to let anything exist only in memory. Like a bunker prepper for code:
+### Commands
 
-- **Force saves everything** - code blocks, text buffers, that brilliant idea you mentioned once
-- **Updates all the docs** - README, PROJECT_STATUS, the works
-- **Creates SESSION_HANDOFF** - decisions, gotchas, "why did we do it this way?!"
-- **Preps git commit** - so you can push and run
+#### `/doomsday` — End-of-Session Shutdown
 
-**Trigger:** `/doomsday`, "wrap up", "end session", or just dramatically announce "DOOMSDAY PROTOCOL"
+Executes a structured shutdown protocol that preserves all session context to disk:
 
-### `/resurrect` - Rise From The Ashes
+- Force-saves all discussed code and file changes
+- Updates README, PROJECT_STATUS, and documentation
+- Creates a SESSION_HANDOFF file with decisions, gotchas, and next actions
+- Prepares a git commit message summarizing the session
 
-> *"Lead Architect returning to a project with wiped memory. Reconstruct immediately."*
+Use when ending a session: `/doomsday`, "wrap up", "end session", or "save everything".
 
-Back after a coffee break? A weekend? A month-long vacation where you forgot everything? No problem:
+#### `/resurrect` — Session Context Restoration
 
-- **Reads all the breadcrumbs** - README, PROJECT_STATUS, handoff files
-- **Diagnoses the "Active Wound"** - what was half-finished when you left?
-- **Spots the Gotchas** - those weird bugs you'll definitely hit again
-- **Gives you THE command** - the one thing to run first
+Reconstructs project state from documentation files for a new session:
 
-**Trigger:** `/resurrect`, "catch me up", "what were we working on", or the classic "...where was I?"
+- Reads README, PROJECT_STATUS, and handoff files
+- Identifies the active problem or feature in progress
+- Surfaces gotchas and blockers from the last session
+- Provides the single highest-priority next action
+
+Use when starting a session: `/resurrect`, "catch me up", "what were we working on", or "continue where we left off".
+
+---
+
+## site-audit
+
+Automated website quality assurance — crawl an entire site and produce a comprehensive audit report in one command.
+
+### Usage
+
+```
+/site-audit https://your-site.com
+```
+
+### What It Checks
+
+| Category | Checks | Severity |
+|----------|--------|----------|
+| Broken Links | Internal 404s, timeouts, connection failures | Error |
+| Console Errors | JavaScript runtime errors (filtered for noise) | Error |
+| Broken Resources | Failed images, stylesheets, scripts, fonts | Error |
+| Spelling/Grammar | AI-detected typos with code/jargon filtering | Warning |
+| Visual Layout | Horizontal overflow, collapsed containers | Warning |
+
+### How It Works
+
+1. **Crawl** — BFS traversal of all same-domain pages via WebFetch (default cap: 50 pages)
+2. **Content Analysis** — Dead link detection and spelling/grammar checks during crawl
+3. **UI Checks** — Navigates discovered pages in Chrome for console errors, broken resources, and visual issues
+4. **Report** — Compiles findings into a structured markdown file: `audit-{domain}-{date}.md`
+
+### Report Output
+
+The generated report includes:
+
+- Run metadata (target URL, pages crawled, duration)
+- Summary counts table with error/warning breakdown
+- Findings grouped by type with severity labels
+- Page index showing which pages have the most issues
+- Conditional table of contents for large reports (50+ findings)
+
+### Requirements
+
+- Chrome browser with [Claude in Chrome](https://chromewebstore.google.com/detail/claude-in-chrome/jnkadgmfaiopchpafpmfjekeghigppco) extension (for UI checks)
+- Claude Code with MCP support
+
+---
 
 ## Installation
 
 ```bash
-# Add the marketplace
-/plugin marketplace add sivang/sivan-claude-plugins
+# Clone the repository
+git clone https://github.com/sivang/sivan-claude-plugins.git
 
-# Install the plugin
-/plugin install session-workflow@sivan-plugins
-
-# Restart Claude Code
+# Add as a Claude Code plugin marketplace
+# (follow Claude Code plugin installation docs for your setup)
 ```
 
-## Usage
+The repository uses a multi-plugin layout with a marketplace manifest at `.claude-plugin/marketplace.json`.
 
-**When you're done for the day:**
-```
-/doomsday
-```
-*"Save everything. Trust no one. Not even future me."*
+## Repository Structure
 
-**When you're back:**
 ```
-/resurrect
+sivan-claude-plugins/
+  .claude-plugin/
+    marketplace.json        # Plugin registry
+  session-workflow/
+    .claude-plugin/
+      plugin.json           # Plugin manifest
+    commands/
+      doomsday.md           # /doomsday command
+      resurrect.md          # /resurrect command
+    skills/
+      doomsday/SKILL.md     # Shutdown protocol
+      resurrect/SKILL.md    # Context restoration
+  site-audit/
+    .claude-plugin/
+      plugin.json           # Plugin manifest
+    commands/
+      site-audit.md         # /site-audit command
+    skills/
+      site-audit/
+        SKILL.md            # Audit orchestration (5 phases)
+        references/
+          URL_RULES.md      # URL normalization rules
+          CHECKS.md         # Content analysis rules
+          UI_CHECKS.md      # Chrome UI check rules
+          REPORT.md         # Report format specification
 ```
-*"I have returned. Brief me."*
 
-## Coming Soon
+## Background
 
-Got an idea for a plugin? Open an issue. Got a plugin you built? PRs welcome. This marketplace grows with the community.
+These plugins extend Claude Code with specialized workflows that benefit from structured, repeatable processes. Rather than explaining what you want each session, the plugins encode expert knowledge into skill definitions that Claude follows consistently.
+
+The site-audit plugin uses a two-layer architecture: a backend WebFetch layer handles crawling and content analysis without a browser, then a Chrome layer adds runtime and visual checks on discovered pages. Findings are written progressively to disk (JSONL) to avoid context overflow on large sites.
 
 ## License
 
@@ -70,4 +139,4 @@ MIT
 
 ---
 
-*Built with caffeine and context windows by [Sivan](https://github.com/sivang) at [Vitakka](https://vitakka.co)*
+*Built by [Sivan](https://github.com/sivang) at [Vitakka Consulting](https://vitakka.co)*
