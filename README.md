@@ -6,8 +6,46 @@ A collection of Claude Code plugins for developer productivity. Built by [Sivan 
 
 | Plugin | Version | Description |
 |--------|---------|-------------|
+| [vertex-ai-provider](#vertex-ai-provider) | 1.0.0 | Use Claude models via Google Vertex AI |
 | [session-workflow](#session-workflow) | 1.0.0 | Session context preservation and restoration |
 | [site-audit](#site-audit) | 1.0.0 | Automated website quality auditing |
+
+---
+
+## vertex-ai-provider
+
+Use Claude models (Opus 4.5, Sonnet 4, Haiku 3.5) via Google Cloud Vertex AI with real-time token tracking and cost analytics.
+
+### Features
+
+- **Provider Switching** — Seamlessly switch between Vertex AI and Anthropic
+- **Real-time Tracking** — See token usage and cost in the status line
+- **Full Analytics** — View stats by session, day, week, or month
+- **Flexible Auth** — Support for ADC and Service Account authentication
+
+### Commands
+
+| Command | Description |
+|---------|-------------|
+| `/vertex` | Activate Vertex AI provider |
+| `/vertex setup` | Configuration wizard |
+| `/vertex model <name>` | Switch model (opus-4.5, sonnet-4, haiku-3.5) |
+| `/anthropic` | Switch back to Anthropic's API |
+| `/vertex-stats` | Show usage statistics |
+| `/vertex-export` | Export usage data to JSON |
+
+### Prerequisites
+
+1. Enable Vertex AI API: `gcloud services enable aiplatform.googleapis.com`
+2. Enable Claude models in [Model Garden](https://console.cloud.google.com/vertex-ai/model-garden)
+3. Authenticate: `gcloud auth application-default login`
+
+### Installation
+
+```bash
+cd ~/.claude/plugins/sivan-plugins/vertex-ai-provider
+npm install && npm run build
+```
 
 ---
 
@@ -103,6 +141,16 @@ The repository uses a multi-plugin layout with a marketplace manifest at `.claud
 sivan-claude-plugins/
   .claude-plugin/
     marketplace.json        # Plugin registry
+  vertex-ai-provider/
+    .claude-plugin/
+      plugin.json           # Plugin manifest
+    commands/
+      vertex.md             # /vertex command
+      anthropic.md          # /anthropic command
+      vertex-stats.md       # /vertex-stats command
+      vertex-export.md      # /vertex-export command
+    src/                    # TypeScript source
+    tests/                  # Jest tests
   session-workflow/
     .claude-plugin/
       plugin.json           # Plugin manifest

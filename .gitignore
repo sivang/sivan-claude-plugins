@@ -22,3 +22,8 @@ secrets.json
 
 # Local plugin settings
 *.local.md
+
+# Node.js (for vertex-ai-provider)
+node_modules/
+dist/
+*.tsbuildinfo

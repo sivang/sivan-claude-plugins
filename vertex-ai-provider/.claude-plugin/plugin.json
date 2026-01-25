@@ -1,0 +1,14 @@
+{
+  "name": "vertex-ai-provider",
+  "version": "1.0.0",
+  "description": "Use Claude models via Google Vertex AI with real-time token tracking and cost analytics",
+  "author": {
+    "name": "Sivan Grünberg",
+    "email": "sivan@vitakka.co",
+    "url": "https://vitakka.co"
+  },
+  "homepage": "https://github.com/sivang/sivan-claude-plugins",
+  "repository": "https://github.com/sivang/sivan-claude-plugins",
+  "license": "MIT",
+  "keywords": ["vertex-ai", "gcp", "google-cloud", "token-tracking", "cost-analytics", "claude"]
+}

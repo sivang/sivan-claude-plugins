@@ -1,6 +1,6 @@
 {
   "name": "sivan-plugins",
-  "description": "Sivan's Claude Code plugins for session management and website auditing",
+  "description": "Sivan's Claude Code plugins for Vertex AI, session management, and website auditing",
   "owner": {
     "name": "Sivan Grünberg",
     "email": "sivan@vitakka.co",
@@ -24,6 +24,17 @@
       "description": "Crawl a website and produce a comprehensive quality audit covering broken links, spelling errors, console errors, and visual issues",
       "version": "1.0.0",
       "source": "./site-audit",
+      "author": {
+        "name": "Sivan Grünberg",
+        "email": "sivan@vitakka.co",
+        "url": "https://vitakka.co"
+      }
+    },
+    {
+      "name": "vertex-ai-provider",
+      "description": "Use Claude models via Google Vertex AI with real-time token tracking and cost analytics",
+      "version": "1.0.0",
+      "source": "./vertex-ai-provider",
       "author": {
         "name": "Sivan Grünberg",
         "email": "sivan@vitakka.co",
