@@ -41,18 +41,20 @@ Create `SESSION_HANDOFF_[DATE].md` (or append to `CHANGELOG.md`). Include:
 2. **The "Gotchas":** Note weird bugs or workarounds that might be forgotten
 3. **Next Actions:** Strictly prioritized list of exactly what to do first next session
 
-## Phase 4: Version Control Prep
+## Phase 4: Version Control
 
 1. Generate a comprehensive **Git Commit Message** formatted as:
    - `feat/fix/chore: [Summary]`
    - `[Bulleted list of detailed changes]`
-2. Do NOT run the commit command unless instructed, but provide exact commands to stage and commit safely.
+   - End the message with the attribution line `Co-Authored-By: Claude Code <noreply@anthropic.com>`
+2. **Ask the user: "Commit and push now?"** Do not end the session while this question is open. On **yes**: stage (`git add -A`), commit, and push, then verify with `git status -sb` (clean and in sync with origin) and report the commit hash. On **no**: record in the handoff's "Next Actions" that the commit is prepared but NOT run — never leave this implicit — and do not run git.
 
 ## Final Output Format
 
 ```
 ✅ FILE SYNC STATUS: [Report on files saved/updated]
 📄 DOCS UPDATED: [List of .md files touched]
+🔖 COMMIT: [pushed hash / or "prepared, not run — commit is queued for next session"]
 🚀 NEXT SESSION TRIGGER: [The one command or task to run first next time]
 ```
 
