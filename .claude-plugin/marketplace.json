@@ -11,7 +11,7 @@
     {
       "name": "session-workflow",
       "description": "Session management: doomsday shutdown protocol and session resurrection",
-      "version": "1.0.0",
+      "version": "1.0.1",
       "source": "./session-workflow",
       "author": {
         "name": "Sivan Grünberg",
